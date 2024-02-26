@@ -1,0 +1,15 @@
+/* Gradient.css */
+
+/* Define a custom gradient */
+.gradient-background {
+    background: linear-gradient(to bottom, #ff6b6b, #ffb88c); /* Adjust colors as needed */
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: #fff; /* Set text color to contrast with the gradient */
+  }
+  
+  /* Add any additional styles or adjustments as needed */
+  

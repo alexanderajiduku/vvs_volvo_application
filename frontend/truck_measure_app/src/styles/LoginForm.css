@@ -1,0 +1,48 @@
+/* LoginForm.css */
+
+/* Center the form vertically on the page */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 80vh; /* Adjust the height as needed */
+}
+
+/* Style form container */
+.form-container {
+  width: 100%; /* Adjust the width as needed */
+  max-width: 600px; /* Adjust the maximum width as needed */
+}
+
+/* Style form inputs and labels */
+.form-group {
+  margin-bottom: 20px;
+}
+
+/* Style labels to the left using Bootstrap grid classes */
+.form-label {
+  font-weight: bold;
+  text-align: left; /* Align labels to the left */
+}
+
+/* Style the submit button */
+.btn-primary {
+  background-color: #007bff; /* Change to your preferred color */
+  border-color: #007bff; /* Change to your preferred color */
+  margin-top: 10px; /* Add some space between the button and form fields */
+  align-self: center;
+}
+
+/* Style form errors */
+.alert {
+  margin-top: 10px;
+}
+
+/* Add more custom styles as needed */
+
+.login-form-background {
+  background-image: url('//Users/Rednax/Library/CloudStorage/OneDrive-Personal/Springboard Boot Camp/Capstone_2/frontend/truck_measure_app/public/logos/volvo.jpg');
+  background-size: cover;
+  height: 100vh; /* Full height */
+}

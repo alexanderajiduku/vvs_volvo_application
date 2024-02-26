@@ -1,0 +1,54 @@
+/* Home.css */
+
+/* Style the outer container */
+.Homepage {
+  background-color: transparent; /* Set background color */
+  padding: 40px; /* Add some padding for spacing */
+  min-height: 100vh; /* Ensure the container takes at least the full viewport height */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Style the inner container */
+.container {
+  background-color: white; /* Set inner container background color */
+  padding: 20px; /* Add padding for content spacing */
+  border-radius: 8px; /* Add rounded corners to the container */
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1); /* Add a subtle box shadow */
+  text-align: center; /* Center-align text content */
+}
+
+/* Style the heading */
+h1 {
+  font-size: 36px; /* Set heading font size */
+  margin-bottom: 20px; /* Add margin below heading */
+}
+
+/* Style the welcome message */
+h2 {
+  font-size: 24px; /* Set welcome message font size */
+  margin-top: 20px; /* Add margin above welcome message */
+}
+
+/* Style the paragraph text */
+p {
+  font-size: 18px; /* Increase font size for better readability */
+  margin: 20px 0; /* Add margin to space out paragraphs vertically */
+  text-align: left; /* Align text to the left for a cleaner look */
+  line-height: 1.6; /* Increase line height for better readability */
+  color: #444; /* Use a slightly darker text color for contrast */
+}
+
+
+
+/* Style the image container */
+.image-container {
+  margin-top: 20px; /* Add margin above the image container */
+}
+
+/* Style individual images */
+.image-container img {
+  max-width: 100%; /* Ensure images don't exceed their container width */
+  margin: 10px; /* Add margin around images */
+}
