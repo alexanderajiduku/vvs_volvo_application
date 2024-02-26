@@ -32,7 +32,6 @@ const CalibrationProcess = ({ onCalibrationSuccess }) => {
         try {
             const url = `http://localhost:8000/api/v1/calibration/${selectedCameraId}`;
             const response = await axios.post(url);
-            console.log('Calibration completed:', response.data);
             setOpenSnackbar(true);
             setCalibrationSuccess(true);
             if (onCalibrationSuccess) onCalibrationSuccess();

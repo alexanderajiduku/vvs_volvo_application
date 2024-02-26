@@ -7,38 +7,12 @@ from app.utils.image_utils import load_images
 from sqlalchemy.orm import Session
 from app.models.uploadimages import UploadedFile
 from app.models.camera import Camera
+import json
 import os
 import time
 
 class CameraCalibrationService:
-    """
-    Service class for camera calibration.
-
-    Args:
-        db (Session): The database session.
-        camera_id (int): The ID of the camera.
-
-    Attributes:
-        UPLOADS_DIR (str): The directory for uploads.
-        CALIBRATION_SUBDIR (str): The subdirectory for calibration data.
-        db (Session): The database session.
-        camera_id (int): The ID of the camera.
-        calib_data_path (str): The path to the calibration data directory.
-        image_paths (List[str]): The paths of the uploaded images.
-        checkerboard_dims (Tuple[int, int]): The dimensions of the checkerboard.
-
-    Methods:
-        get_calibration_data_path: Get the path to the calibration data directory.
-        fetch_checkerboard_dims: Fetch the dimensions of the checkerboard from the database.
-        fetch_image_paths: Fetch the paths of the uploaded images from the database.
-        find_checkerboard_corners: Find the checkerboard corners in the images.
-        calibrate_camera: Calibrate the camera using the checkerboard corners.
-        save_calibration_parameters: Save the calibration parameters to a file.
-        save_calibration_data_to_db: Save the calibration data to the database.
-        perform_calibration: Perform the camera calibration process.
-    """
-
-    UPLOADS_DIR = "calibrations"  
+    UPLOADS_DIR = "calibrations"  # Base directory for uploads
     CALIBRATION_SUBDIR = "calibration_data"
 
     def __init__(self, db: Session, camera_id: int):
@@ -49,27 +23,12 @@ class CameraCalibrationService:
         self.checkerboard_dims = self.fetch_checkerboard_dims()
 
     def get_calibration_data_path(self):
-        """
-        Get the path to the calibration data directory.
-
-        Returns:
-            str: The path to the calibration data directory.
-        """
         calib_dir = os.path.join(self.UPLOADS_DIR, self.CALIBRATION_SUBDIR)
         os.makedirs(calib_dir, exist_ok=True)
         
         return calib_dir
 
     def fetch_checkerboard_dims(self):
-        """
-        Fetch the dimensions of the checkerboard from the database.
-
-        Returns:
-            Tuple[int, int]: The dimensions of the checkerboard.
-        
-        Raises:
-            ValueError: If the camera with the specified ID is not found in the database.
-        """
         try:
             camera_info = self.db.query(Camera).filter(Camera.id == self.camera_id).first()
             if not camera_info:
@@ -80,22 +39,91 @@ class CameraCalibrationService:
             raise
 
     def fetch_image_paths(self):
-        """
-        Fetch the paths of the uploaded images from the database.
-
-        Returns:
-            List[str]: The paths of the uploaded images.
-        
-        Raises:
-            ValueError: If no uploaded images are found in the database.
-        """
         try:
             image_records = self.db.query(UploadedFile).all()
             if not image_records:
                 raise ValueError("No uploaded images found in the database.")
+        # Replace 'path' with the correct attribute name, e.g., 'file_path'
             return [image_record.file_path for image_record in image_records]
         except SQLAlchemyError as e:
             logging.error(f"Database error when fetching image paths: {str(e)}")
             raise
 
- 
+
+    def find_checkerboard_corners(self, images):
+        objpoints = []  # 3d points in real world space
+        imgpoints = []  # 2d points in image plane
+        criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
+        objp = np.zeros((self.checkerboard_dims[0] * self.checkerboard_dims[1], 3), np.float32)
+        objp[:, :2] = np.mgrid[0:self.checkerboard_dims[0], 0:self.checkerboard_dims[1]].T.reshape(-1, 2)
+
+        for img in images:
+            try:
+                gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            except cv2.error as e:
+                logging.error(f"OpenCV error in converting image to grayscale: {str(e)}")
+                continue  # Skip this image and continue with the next
+
+            ret, corners = cv2.findChessboardCorners(gray, (self.checkerboard_dims[0], self.checkerboard_dims[1]), None)
+            if ret:
+                objpoints.append(objp)
+                corners2 = cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria)
+                imgpoints.append(corners2)
+
+        if not objpoints or not imgpoints:
+            raise ValueError("Could not find checkerboard corners in any of the images.")
+
+        return objpoints, imgpoints
+
+    def calibrate_camera(self, objpoints, imgpoints, image_shape):
+        try:
+            ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, image_shape[::-1], None, None)
+            if not ret:
+                raise ValueError("Camera calibration failed.")
+            return {"ret": ret, "mtx": mtx, "dist": dist, "rvecs": rvecs, "tvecs": tvecs}
+        except cv2.error as e:
+            logging.error(f"OpenCV error during camera calibration: {str(e)}")
+            raise ValueError("Error during camera calibration.")
+
+    def save_calibration_parameters(self, params):
+        try:
+            timestamp = time.strftime("%Y%m%d-%H%M%S")
+            filename = f"MultiMatrix_{timestamp}.npz"
+            filepath = os.path.join(self.calib_data_path, filename)
+           
+
+            if not os.path.exists(self.calib_data_path):
+                os.makedirs(self.calib_data_path)
+            np.savez(
+                filepath,
+                camMatrix=params["mtx"],
+                distCoef=params["dist"],
+                rVector=params["rvecs"],
+                tVector=params["tvecs"],
+            )
+            self.save_calibration_data_to_db(filepath)
+            return filepath
+        except Exception as e:
+            logging.error(f"Error when saving calibration parameters: {str(e)}")
+            raise ValueError("Error when saving calibration parameters.")  
+        
+    def save_calibration_data_to_db(self, filepath):
+        calibration_data = CalibrationData(
+            camera_id=self.camera_id,
+            calibration_file_path=filepath
+        )
+        self.db.add(calibration_data)
+        self.db.commit()
+   
+
+    def perform_calibration(self):
+        try:
+            images = load_images(self.image_paths)
+            if not images:
+                raise ValueError("No images loaded. Please check the image paths.")
+            objpoints, imgpoints = self.find_checkerboard_corners(images)
+            calibration_params = self.calibrate_camera(objpoints, imgpoints, images[0].shape[:2])
+            return self.save_calibration_parameters(calibration_params)
+        except Exception as e:
+            logging.error(f"Error during camera calibration process: {str(e)}")
+            raise ValueError(f"Calibration failed: {str(e)}")
