@@ -21,6 +21,7 @@ const BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
     getAuthToken: () => localStorage.getItem('authToken'),
     setAuthToken: (token) => localStorage.setItem('authToken', token),
     clearAuthToken: () => localStorage.removeItem('authToken'),
+
   
   signup: async (formData) => {
     try {
@@ -34,45 +35,24 @@ const BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
     }
   },
   signin: async (formData) => {
-    console.log('Signing in with formData:', formData);
     try {
       const response = await axios.post(`${BASE_URL}/api/v1/signin`, formData);
-      return { success: true, token: response.data.token, user: response.data.user };
+      const { access_token } = response.data;
+      
+      if (access_token) {
+        AuthApi.setAuthToken(access_token); 
+        return { success: true, user: response.data }; // Aligned with the signup function's return structure
+      } else {
+        console.error('SignIn failed: Invalid response from server', response);
+        return { success: false, errors: ["Invalid response from server."] };
+      }
     } catch (error) {
       console.error('Login error:', error.response || error);
-      const errors = error.response?.data?.detail.map(err => {
-        return err.msg || "An unexpected error occurred. Please try again.";
-      }) || ["An unexpected error occurred. Please try again."];
-
-      return { success: false, errors };
+      const errors = error.response?.data?.detail || ["An unexpected error occurred. Please try again."];
+      return { success: false, errors }; // Aligned with the signup function's error handling
     }
   },
-  
-  
-  // getCurrentUser: async () => {
-  //     const token = localStorage.getItem('access_token');
-  //     try { request
-  //       console.log('Token:', token);
-  //       const response = await axios.get(`${BASE_URL}/api/v1/user/me`, {
-  //         headers: {
-  //           'Authorization': `Bearer ${token}`
-  //         }
-  //       });
-  //       console.log('Current User:', response.data);
-  //       console.log('Token:', token);
-  //       return { success: true, user: response.data };
-  //     } catch (error) {
-  //       console.error('Error fetching current user:', error);
-  //       if (error.response && error.response.data && error.response.data.detail) {
-  //         console.error('Error details:', error.response.data.detail);
-  //         return { success: false, errors: error.response.data.detail };
-  //       } else {
-  //         console.error('An unexpected error occurred while fetching the current user. Please try again.');
-  //         return { success: false, errors: ["An unexpected error occurred while fetching the current user. Please try again."] };
-  //       }
-  //     }
-  //   },
-    
+
   
   uploadImage: async (imageFile, authToken) => {
     const formData = new FormData();

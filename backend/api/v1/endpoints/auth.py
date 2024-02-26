@@ -44,9 +44,3 @@ def signin(db: Session = Depends(get_db), email: str = Body(...), password: str 
         data={"sub": db_user.email}, expires_delta=access_token_expires)
     return {"access_token": access_token, "token_type": "bearer"}
 
-# @router.get("/user/me", response_model=UserBase)
-# def get_current_user(current_user: str = Depends(verify_token), db: Session = Depends(get_db)):
-#     db_user = db.query(User).filter(User.email == current_user).first()
-#     if db_user is None:
-#         raise HTTPException(status_code=404, detail="User not found")
-#     return UserBase.from_orm(db_user)

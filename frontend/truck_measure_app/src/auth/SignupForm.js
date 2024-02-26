@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useUserContext } from './UserContext'; // Update the path as necessary
-import AuthApi from '../api/api' // Update the path as necessary
+import { useUserContext } from './UserContext';
+import AuthApi from '../api/api' 
 import { Button, TextField, FormControlLabel, Checkbox, Link, Grid, Box, Typography, Container, Snackbar, Alert, CssBaseline } from '@mui/material';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { Link as RouterLink } from 'react-router-dom';
@@ -82,7 +82,6 @@ export default function SignUp() {
       password: data.get('password'),
     };
 
-    // Client-side validation
     if (!payload.email || !payload.password || !payload.username) {
       setErrorMessage("Username, password, and email are required.");
       setOpenSnackbar(true);
@@ -92,23 +91,33 @@ export default function SignUp() {
     try {
       const response = await AuthApi.signup(payload);
       if (response.success) {
-        setAuthToken(response.token); 
-        setCurrentUser(response.user); 
-        navigate('/protected/component'); 
+        setAuthToken(response.token);
+        setCurrentUser(response.user);
+        navigate('/protected/component');
       } else {
         const errors = response.errors ? extractErrorMessages(response) : ['An error occurred during signup. Please try again.'];
         handleErrors(errors);
       }
     } catch (error) {
-      console.error('Signup failed:', error);
-      handleErrors(['An unexpected error occurred. Please try again.']);
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        console.error('Signup error:', error.response.data);
+        const errors = extractErrorMessages(error.response.data);
+        handleErrors(errors);
+      } else if (error.request) {
+        // The request was made but no response was received
+        console.error('Signup error: No response', error.request);
+        setErrorMessage('Network error. Please check your connection and try again.');
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        console.error('Signup error:', error.message);
+        setErrorMessage('An unexpected error occurred. Please try again.');
+      }
+      setOpenSnackbar(true);
     }
-  };
+};
 
-  const handleErrors = (errors) => {
-    setErrorMessage(errors.join(', '));
-    setOpenSnackbar(true);
-  };
 
   const extractErrorMessages = (data) => {
     if (Array.isArray(data.errors)) {

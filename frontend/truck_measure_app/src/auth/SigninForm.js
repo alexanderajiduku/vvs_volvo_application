@@ -3,7 +3,8 @@ import { Button, TextField, FormControlLabel, Checkbox, Link, Grid, Box, Typogra
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
 import { useUserContext } from './UserContext';
-import axios from 'axios';
+import AuthApi from '../api/api';
+import { Link as RouterLink } from 'react-router-dom';
 
 
 const customTheme = createTheme({
@@ -64,34 +65,43 @@ const customTheme = createTheme({
  */
 
 export default function SignIn() {
-  const { setCurrentUser } = useUserContext(); // Use the UserContext
   const navigate = useNavigate();
+  const { setAuthToken, setCurrentUser, } = useUserContext();
+  const [errorMessage, setErrorMessage] = useState('');
+  const [openSnackbar, setOpenSnackbar] = useState(false);
+
+  const handleErrors = (errors) => {
+    setErrorMessage(errors.join(', '));
+    setOpenSnackbar(true);
+    return;
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
-    
-    const payload = {
-      username: data.get('username'),
-      password: data.get('password'),
+    const formData = {
+        email: data.get('email'),
+        password: data.get('password'),
     };
 
     try {
-      const response = await axios.post('http://localhost:8000/api/v1/signin', payload);
-
-      if (response.status === 200) {
-        setCurrentUser(response.data); // Assuming response.data contains user data
-        navigate('/protected/component'); // Navigate to a protected route upon success
-      } else {
-        console.error('SignIn Error:', response.data.detail);
-      }
+        const response = await AuthApi.signin(formData);
+        if (response.success) {
+            setCurrentUser(response.user);
+            navigate('/protected/component'); 
+        } else {
+            console.error('SignIn failed with response:', { success, errors });
+            handleErrors(errors || ['An error occurred. Please try again.']);
+        }
     } catch (error) {
-      console.error('Error:', error.response ? error.response.data : error.message);
+        console.error('SignIn Error:', error);
+        setErrorMessage('An unexpected error occurred. Please try again.');
+        setOpenSnackbar(true);
     }
-  };
+};
 
   return (
-    <ThemeProvider theme={customTheme}> {/* Apply the custom theme */}
+    <ThemeProvider theme={customTheme}> 
       <Container component="main" maxWidth="xs">
         <CssBaseline />
         <Box
@@ -110,10 +120,10 @@ export default function SignIn() {
               margin="normal"
               required
               fullWidth
-              id="username"
-              label="Username"
-              name="username"
-              autoComplete="username"
+              id="email"
+              label="Email"
+              name="email"
+              autoComplete="email"
               autoFocus
             />
             <TextField
@@ -162,6 +172,11 @@ export default function SignIn() {
             {'.'}
           </Typography>
         </Box>
+        <Snackbar open={openSnackbar} autoHideDuration={6000} onClose={() => setOpenSnackbar(false)}>
+          <Alert onClose={() => setOpenSnackbar(false)} severity="error" sx={{ width: '100%' }}>
+            {errorMessage}
+          </Alert>
+        </Snackbar>
       </Container>
     </ThemeProvider>
   );

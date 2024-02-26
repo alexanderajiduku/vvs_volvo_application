@@ -11,7 +11,9 @@ import { useTheme } from '@mui/material/styles';
 
 const Navigation = ({ logout }) => {
     const { currentUser } = useContext(UserContext);
+    
     const theme = useTheme();
+    
 
     const loggedInNav = () => {
         if (currentUser) {
@@ -24,9 +26,7 @@ const Navigation = ({ logout }) => {
                     <Button variant="text" component={NavLink} to="/mlmodel" sx={{ color: 'white', mr: 2 }}>
                         ML Model
                     </Button>
-                    <Button variant="text" component={NavLink} to="/aiprocesses" sx={{ color: 'white', mr: 2 }}>
-                        AI Processes
-                    </Button>
+                   
                     <Button variant="text" component={NavLink} to="/ultralytics" sx={{ color: 'white', mr: 2 }}>
                         Ultralytics
                     </Button>
@@ -39,6 +39,7 @@ const Navigation = ({ logout }) => {
             return null;
         }
     };
+    
 
     const loggedOutNav = () => (
         <Box sx={{ flexGrow: 1, justifyContent: 'flex-end', display: 'flex' }}>
