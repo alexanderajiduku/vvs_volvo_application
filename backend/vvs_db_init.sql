@@ -3,8 +3,8 @@
 
 \c postgres
 
-DROP DATABASE IF EXISTS your_db_name;
-CREATE DATABASE your_db_name;
+DROP DATABASE IF EXISTS vvs_db;
+CREATE DATABASE vvs_db;
 
 \c vvs_db
 

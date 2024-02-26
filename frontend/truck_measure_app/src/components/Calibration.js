@@ -29,7 +29,7 @@ const Calibration = () => {
             <Grid item xs={12} md={3.5}>
               <Typography variant="h6" gutterBottom sx={{ textAlign: 'center' }}>
               </Typography>
-              <ImageUploader onUploadSuccess={() => console.log('Image uploaded successfully')} />
+              <ImageUploader onUploadSuccess={() => console.log()} />
             </Grid>
             <Grid item xs={12} md={3.5}> 
               <Typography variant="h6" gutterBottom sx={{ textAlign: 'center' }}>

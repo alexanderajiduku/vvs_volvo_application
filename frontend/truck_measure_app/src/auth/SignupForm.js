@@ -70,6 +70,8 @@ export default function SignUp() {
   const { setAuthToken, setCurrentUser } = useUserContext();
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [usernameError, setUsernameError] = useState('');
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -99,33 +101,41 @@ export default function SignUp() {
         handleErrors(errors);
       }
     } catch (error) {
-      if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
-        console.error('Signup error:', error.response.data);
-        const errors = extractErrorMessages(error.response.data);
-        handleErrors(errors);
-      } else if (error.request) {
-        // The request was made but no response was received
-        console.error('Signup error: No response', error.request);
-        setErrorMessage('Network error. Please check your connection and try again.');
-      } else {
-        // Something happened in setting up the request that triggered an Error
-        console.error('Signup error:', error.message);
-        setErrorMessage('An unexpected error occurred. Please try again.');
-      }
-      setOpenSnackbar(true);
+      const errors = error.response ? extractErrorMessages(error.response.data) : ['Network error. Please check your connection and try again.'];
+      handleErrors(errors);
     }
-};
-
+  };
 
   const extractErrorMessages = (data) => {
-    if (Array.isArray(data.errors)) {
-      return data.errors.map(err => err.message || err);
+    let errors = [];
+
+    if (data.errors) {
+      data.errors.forEach((err) => {
+        if (err.param === 'email') {
+          if (err.msg === 'Invalid') {
+            errors.push('The email address is not formatted correctly.');
+            setEmailError('The email address is not formatted correctly.');
+          } else if (err.msg === 'Exists') {
+            errors.push('This email address is already in use.');
+            setEmailError('This email address is already in use.');
+          }
+        } else if (err.param === 'username' && err.msg === 'Exists') {
+          errors.push('This username is already taken.');
+          setUsernameError('This username is already taken.');
+        } else {
+          errors.push(err.msg || 'An unexpected error occurred.');
+        }
+      });
     } else if (data.message) {
-      return [data.message];
+      errors.push(data.message);
     }
-    return ['An unexpected error occurred. Please try again.'];
+
+    return errors.length ? errors : ['An unexpected error occurred. Please try again.'];
+  };
+
+  const handleErrors = (errors) => {
+    setErrorMessage(errors.join(' '));
+    setOpenSnackbar(true);
   };
 
   return (
@@ -133,9 +143,7 @@ export default function SignUp() {
       <Container component="main" maxWidth="xs">
         <CssBaseline />
         <Box sx={{ marginTop: 8, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <Typography component="h1" variant="h5">
-            Sign Up
-          </Typography>
+          <Typography component="h1" variant="h5">Sign Up</Typography>
           <Box component="form" noValidate onSubmit={handleSubmit} sx={{ mt: 3 }}>
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>
@@ -145,10 +153,10 @@ export default function SignUp() {
                 <TextField required fullWidth id="lastName" label="Last Name" name="lastName" autoComplete="family-name" />
               </Grid>
               <Grid item xs={12}>
-                <TextField required fullWidth id="username" label="Username" name="username" autoComplete="username" />
+                <TextField required fullWidth id="username" label="Username" name="username" autoComplete="username" error={!!usernameError} helperText={usernameError} />
               </Grid>
               <Grid item xs={12}>
-                <TextField required fullWidth id="email" label="Email Address" name="email" autoComplete="email" />
+                <TextField required fullWidth id="email" label="Email Address" name="email" autoComplete="email" error={!!emailError} helperText={emailError} />
               </Grid>
               <Grid item xs={12}>
                 <TextField required fullWidth name="password" label="Password" type="password" id="password" autoComplete="new-password" />
@@ -157,49 +165,21 @@ export default function SignUp() {
                 <FormControlLabel control={<Checkbox value="allowExtraEmails" color="primary" />} label="I want to receive marketing promotions and updates via email." />
               </Grid>
             </Grid>
-            <Button
-                      type="submit"
-                      fullWidth
-                      variant="contained"
-                      sx={{
-                        mt: 3,
-                        mb: 2,
-                        color: 'text.primary', 
-                        backgroundColor: '#000000', 
-                        '&:hover': {
-                          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        },
-                      }}
-                    >
-                      Sign Up
-            </Button>
+            <Button type="submit" fullWidth variant="contained" sx={{ mt: 3, mb: 2, color: 'text.primary', backgroundColor: '#000000', '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.8)' } }}>Sign Up</Button>
             <Grid container justifyContent="flex-end">
               <Grid item>
-                <Link component={RouterLink} to="/signin" variant="body2">
-                  Already have an account? Sign in
-                </Link>
+                <Link component={RouterLink} to="/signin" variant="body2">Already have an account? Sign in</Link>
               </Grid>
             </Grid>
           </Box>
         </Box>
         <Snackbar open={openSnackbar} autoHideDuration={6000} onClose={() => setOpenSnackbar(false)}>
-          <Alert onClose={() => setOpenSnackbar(false)} severity="error" sx={{ width: '100%' }}>
-            {errorMessage}
-          </Alert>
+          <Alert onClose={() => setOpenSnackbar(false)} severity="error" sx={{ width: '100%' }}>{errorMessage}</Alert>
         </Snackbar>
         <Box mt={5} align="center">
-          <Typography variant="body2" color="text.secondary">
-            {'Copyright © '}
-            <Link color="inherit" href="https://volvo.com/">
-              Volvo Trucks Inc
-            </Link>{' '}
-            {new Date().getFullYear()}
-            {'.'}
-          </Typography>
+          <Typography variant="body2" color="text.secondary">{'Copyright © '}<Link color="inherit" href="https://volvo.com/">Volvo Trucks Inc</Link>{' '}{new Date().getFullYear()}{'.'}</Typography>
         </Box>
       </Container>
     </ThemeProvider>
   );
 }
-
-

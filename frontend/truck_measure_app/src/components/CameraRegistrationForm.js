@@ -30,7 +30,6 @@ const CameraRegistrationForm = () => {
             const response = await axios.post('http://localhost:8000/api/v1/registercamera', data, {
                 headers: { 'Content-Type': 'application/json' }
             });
-            console.log(response.data.message);
             setCameraName('');
             setCameraModel('');
             setCheckerboardWidth('');

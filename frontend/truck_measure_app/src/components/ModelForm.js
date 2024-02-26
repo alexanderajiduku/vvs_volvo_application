@@ -55,8 +55,6 @@ const ModelForm = () => {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         },
       });
-
-      console.log('Model uploaded successfully:', response.data);
       setName('');
       setDescription('');
       setModelFile(null);

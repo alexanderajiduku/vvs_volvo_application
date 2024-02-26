@@ -91,11 +91,11 @@ export default function SignIn() {
             navigate('/protected/component'); 
         } else {
             console.error('SignIn failed with response:', { success, errors });
-            handleErrors(errors || ['An error occurred. Please try again.']);
+            handleErrors(errors || ['Email or password is incorrect. Please try again.']);
         }
     } catch (error) {
         console.error('SignIn Error:', error);
-        setErrorMessage('An unexpected error occurred. Please try again.');
+        setErrorMessage('Email or password is incorrect. Please try again.');
         setOpenSnackbar(true);
     }
 };

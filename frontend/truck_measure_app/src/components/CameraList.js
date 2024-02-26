@@ -22,7 +22,6 @@ const CameraList = ({ onSelectCamera }) => {
         setCameras(response.data);  
         setError(null);
       } catch (err) {
-        console.error('Failed to fetch cameras:', err);
         setError('Failed to fetch cameras');
         setCameras([]);
       } finally {

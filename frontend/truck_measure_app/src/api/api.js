@@ -86,7 +86,6 @@ const BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
           'Authorization': `Bearer ${AuthApi.getAuthToken()}`
         }
       });
-      console.log('Camera registered successfully:', response.data);
       return { success: true, data: response.data };
     } catch (error) {
       console.error('Camera registration error:', error.response || error);
@@ -145,7 +144,6 @@ uploadModel: async (formData) => {
           'Authorization': `Bearer ${AuthApi.getAuthToken()}`
         }
       });
-      console.log('Response:', response); 
       return { success: true, model_path: response.data.model_path };
     } catch (error) {
       console.error('Error fetching model path:', error.response || error);

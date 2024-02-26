@@ -9,11 +9,15 @@ import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
 import { useTheme } from '@mui/material/styles';
 
-const Navigation = ({ logout }) => {
-    const { currentUser } = useContext(UserContext);
-    
+const Navigation = () => {
+    const { currentUser, setCurrentUser } = useContext(UserContext);
     const theme = useTheme();
-    
+
+    const handleLogout = () => {
+        // Implement logout logic here, e.g., clear user token, update state
+        setCurrentUser(null); // Example: Update the user context to null upon logout
+        // Redirect to login page or home page as needed
+    };
 
     const loggedInNav = () => {
         if (currentUser) {
@@ -26,11 +30,10 @@ const Navigation = ({ logout }) => {
                     <Button variant="text" component={NavLink} to="/mlmodel" sx={{ color: 'white', mr: 2 }}>
                         ML Model
                     </Button>
-                   
                     <Button variant="text" component={NavLink} to="/ultralytics" sx={{ color: 'white', mr: 2 }}>
                         Ultralytics
                     </Button>
-                    <Button onClick={logout} sx={{ color: 'white' }}>
+                    <Button onClick={handleLogout} sx={{ color: 'white' }}>
                         Log out {displayName}
                     </Button>
                 </Box>
@@ -39,7 +42,6 @@ const Navigation = ({ logout }) => {
             return null;
         }
     };
-    
 
     const loggedOutNav = () => (
         <Box sx={{ flexGrow: 1, justifyContent: 'flex-end', display: 'flex' }}>
@@ -68,6 +70,5 @@ const Navigation = ({ logout }) => {
         </AppBar>
     );
 };
-
 
 export default Navigation;

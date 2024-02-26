@@ -22,9 +22,16 @@ const ImageUploader = ({ onUploadSuccess }) => {
     const [error, setError] = useState('');
     const fileInputRef = useRef(null);
 
+
+
     const handleFileChange = (event) => {
-        setSelectedFile(event.target.files[0]);
-        setError('');
+        const file = event.target.files[0];
+        if (file && ['image/jpeg', 'image/png'].includes(file.type)) {
+            setSelectedFile(file);
+            setError('');
+        } else {
+            setError('Unsupported file type. Please select a .jpg or .png image.');
+        }
     };
 
     const handleCameraSelect = (camera_id) => {
@@ -55,11 +62,10 @@ const ImageUploader = ({ onUploadSuccess }) => {
                     setUploadProgress(percentCompleted);
                 },
             });
-            console.log('Image uploaded successfully');
             setSelectedFile(null);
             setSelectedCameraId(null);
             setUploadProgress(0);
-            fileInputRef.current.value = null; // Reset file input
+            fileInputRef.current.value = null;
             if (onUploadSuccess) onUploadSuccess();
         } catch (error) {
             setError(`Error uploading image: ${error.message}`);

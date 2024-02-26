@@ -52,8 +52,6 @@ const UltralyticsFileUpload = ({ selectedModelId, onUploadSuccess }) => {
                     setUploadProgress(percentCompleted);
                 }
             });
-    
-            console.log('File uploaded successfully:', response.data);
             setSuccessMessage('File uploaded successfully!');
             setSelectedFile(null);
             setUploadProgress(0);
