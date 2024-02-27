@@ -14,6 +14,15 @@ const CameraRegistrationForm = () => {
     const [checkerboardWidth, setCheckerboardWidth] = useState('');
     const [checkerboardHeight, setCheckerboardHeight] = useState('');
     const [description, setDescription] = useState('');
+    const [openSnackbar, setOpenSnackbar] = useState(false);
+    const [snackbarMessage, setSnackbarMessage] = useState('');
+
+    const handleCloseSnackbar = (event, reason) => {
+        if (reason === 'clickaway') {
+            return;
+        }
+        setOpenSnackbar(false);
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -27,7 +36,7 @@ const CameraRegistrationForm = () => {
         };
     
         try {
-            const response = await axios.post('http://localhost:8000/api/v1/registercamera', data, {
+            await axios.post('http://localhost:8000/api/v1/registercamera', data, {
                 headers: { 'Content-Type': 'application/json' }
             });
             setCameraName('');
@@ -35,8 +44,12 @@ const CameraRegistrationForm = () => {
             setCheckerboardWidth('');
             setCheckerboardHeight('');
             setDescription('');
+            setSnackbarMessage('Camera registered successfully!');
+            setOpenSnackbar(true);
         } catch (error) {
             console.error("Error registering camera:", error.response ? error.response.data : error);
+            setSnackbarMessage('Failed to register camera. Please try again.');
+            setOpenSnackbar(true);
         }
     };
 

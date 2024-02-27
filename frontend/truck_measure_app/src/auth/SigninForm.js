@@ -4,7 +4,6 @@ import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
 import { useUserContext } from './UserContext';
 import AuthApi from '../api/api';
-import { Link as RouterLink } from 'react-router-dom';
 
 
 const customTheme = createTheme({
@@ -66,40 +65,39 @@ const customTheme = createTheme({
 
 export default function SignIn() {
   const navigate = useNavigate();
-  const { setAuthToken, setCurrentUser, } = useUserContext();
+  const { setCurrentUser } = useUserContext(); // Destructure setCurrentUser from your context
   const [errorMessage, setErrorMessage] = useState('');
   const [openSnackbar, setOpenSnackbar] = useState(false);
 
+  // Define handleErrors within your component
   const handleErrors = (errors) => {
     setErrorMessage(errors.join(', '));
     setOpenSnackbar(true);
-    return;
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     const formData = {
-        email: data.get('email'),
-        password: data.get('password'),
+      email: data.get('email'),
+      password: data.get('password'),
     };
 
     try {
-        const response = await AuthApi.signin(formData);
-        if (response.success) {
-            setCurrentUser(response.user);
-            navigate('/protected/component'); 
-        } else {
-            console.error('SignIn failed with response:', { success, errors });
-            handleErrors(errors || ['Email or password is incorrect. Please try again.']);
-        }
+      const response = await AuthApi.signin(formData);
+      if (response.success) {
+        setCurrentUser(response.user);
+        navigate('/protected/component');
+      } else {
+        console.error('SignIn failed with response:', response);
+        handleErrors(response.errors || ['Email or password is incorrect. Please try again.']);
+      }
     } catch (error) {
-        console.error('SignIn Error:', error);
-        setErrorMessage('Email or password is incorrect. Please try again.');
-        setOpenSnackbar(true);
+      console.error('SignIn Error:', error);
+      setErrorMessage('An error occurred. Please try again.');
+      setOpenSnackbar(true);
     }
-};
-
+  };
   return (
     <ThemeProvider theme={customTheme}> 
       <Container component="main" maxWidth="xs">
