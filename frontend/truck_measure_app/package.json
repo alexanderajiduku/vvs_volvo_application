@@ -28,7 +28,8 @@
     "stream-browserify": "^3.0.0",
     "styled-components": "^6.1.8",
     "util": "^0.12.5",
-    "web-vitals": "^3.5.2"
+    "web-vitals": "^3.5.2",
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -49,7 +50,6 @@
     ]
   },
   "devDependencies": {
-    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
     "customize-cra": "^1.0.0",
     "eslint-webpack-plugin": "^4.0.1",
     "react-error-overlay": "^6.0.11"
