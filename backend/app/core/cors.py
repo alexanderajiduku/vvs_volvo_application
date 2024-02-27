@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 def setup_cors(app):
     origins = [
+        "https://vvs-volvo-application-frontend.onrender.com",
         "http://localhost:3000"
     ]
 

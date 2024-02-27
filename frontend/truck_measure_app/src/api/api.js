@@ -41,7 +41,7 @@ const BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
       
       if (access_token) {
         AuthApi.setAuthToken(access_token); 
-        return { success: true, user: response.data }; // Aligned with the signup function's return structure
+        return { success: true, user: response.data }; 
       } else {
         console.error('SignIn failed: Invalid response from server', response);
         return { success: false, errors: ["Invalid response from server."] };
@@ -49,7 +49,7 @@ const BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
     } catch (error) {
       console.error('Login error:', error.response || error);
       const errors = error.response?.data?.detail || ["An unexpected error occurred. Please try again."];
-      return { success: false, errors }; // Aligned with the signup function's error handling
+      return { success: false, errors }; 
     }
   },
 
