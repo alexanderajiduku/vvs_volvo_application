@@ -1,7 +1,7 @@
 
 .wallpaper {
     /* Set background image and styling */
-    background-image: url('/Users/Rednax/Library/CloudStorage/OneDrive-Personal/Springboard Boot Camp/Capstone_2/frontend/truck_measure_app/public/logos/volvo.jpg');
+    background-image: url('../public/logos/volvo.jpg');
     background-size: cover;
     background-repeat: no-repeat;
     background-attachment: fixed; /* Optional: Keep the background fixed */
