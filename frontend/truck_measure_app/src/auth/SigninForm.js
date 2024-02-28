@@ -94,13 +94,10 @@ export default function SignIn() {
         setOpenSnackbar(true);
         setTimeout(() => navigate('/protected/component'), 2000); // Delay for readability of the Snackbar
       } else {
-        // Handle specific error messages
         let errorMsg = 'An error occurred. Please try again.'; // Default error message
         if (typeof response.errors === 'string') {
-          // Directly use the string error message
           errorMsg = response.errors;
         } else if (Array.isArray(response.errors) && response.errors.length > 0) {
-          // Join array of error messages
           errorMsg = response.errors.join(', ');
         }
         setErrorMessage(errorMsg);
@@ -108,7 +105,6 @@ export default function SignIn() {
         setOpenSnackbar(true);
       }
     } catch (error) {
-      // Handle unexpected errors including network issues or server errors
       setErrorMessage('An unexpected error occurred. Please try again.');
       setAlertSeverity('error');
       setOpenSnackbar(true);

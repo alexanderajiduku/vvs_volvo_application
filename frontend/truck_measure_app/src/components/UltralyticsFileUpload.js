@@ -23,7 +23,7 @@ const UltralyticsFileUpload = ({ selectedModelId, onUploadSuccess }) => {
     const handleFileChange = (event) => {
         const file = event.target.files[0];
         console.log('File selected:', file); 
-        if (file && ['image/jpeg', 'video/mp4'].includes(file.type)) {
+        if (file && ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'video/mp4'].includes(file.type.toLowerCase())) {
             setSelectedFile(file);
             setError('');
         } else {
