@@ -3,6 +3,7 @@ import { Button, Box, CircularProgress, Snackbar, Alert, Typography, useTheme} f
 import axios from 'axios';
 import CameraList from './CameraList';  
 import CustomTooltip from '../common/CustomToolTip';
+import { BASE_URL } from '../config/config';
 
 /**
  * Represents a component for camera calibration.
@@ -31,7 +32,6 @@ const CalibrationProcess = ({ onCalibrationSuccess }) => {
 
         try {
             const url = `${BASE_URL}/api/v1/calibration/${selectedCameraId}`;
-            // const url = `http://localhost:8000/api/v1/calibration/${selectedCameraId}`;
             const response = await axios.post(url);
             setOpenSnackbar(true);
             setCalibrationSuccess(true);
