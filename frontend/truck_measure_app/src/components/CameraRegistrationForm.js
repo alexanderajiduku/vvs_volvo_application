@@ -3,6 +3,7 @@ import { TextField, Button, Grid, Typography, Container, Box } from '@mui/materi
 import SaveIcon from '@mui/icons-material/Save';
 import axios from 'axios';
 import CustomTooltip from '../common/CustomToolTip';
+import { BASE_URL } from '../config/config';
 
 /**
  * Represents a form for registering a camera.
