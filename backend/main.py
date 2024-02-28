@@ -26,14 +26,7 @@ app = create_application()
 async def home():
     return {"message": "Welcome to the home page!"}
 
-# @app.get("/test_db")
-# def test_db(db: Session = Depends(get_db)):
-#     try:
-#         # This is a simple operation that should always work if the DB is connected
-#         result = db.execute("SELECT 1")
-#         return {"DB Test": result.scalar() == 1}
-#     except Exception as e:
-#         return {"DB Test": False, "Error": str(e)}
+
 
 if __name__ == "__main__":
     import uvicorn
