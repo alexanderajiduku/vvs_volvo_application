@@ -17,6 +17,7 @@ const CameraRegistrationForm = () => {
     const [description, setDescription] = useState('');
     const [openSnackbar, setOpenSnackbar] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
+    const [alertSeverity, setAlertSeverity] = useState('success');
 
     const handleCloseSnackbar = (event, reason) => {
         if (reason === 'clickaway') {
@@ -40,16 +41,17 @@ const CameraRegistrationForm = () => {
             await axios.post(`${BASE_URL}/api/v1/registercamera`, data, {
                 headers: { 'Content-Type': 'application/json' }
             });
+            setSnackbarMessage('Camera registered successfully!');
+            setAlertSeverity('success');
+            setOpenSnackbar(true);
             setCameraName('');
             setCameraModel('');
             setCheckerboardWidth('');
             setCheckerboardHeight('');
             setDescription('');
-            setSnackbarMessage('Camera registered successfully!');
-            setOpenSnackbar(true);
         } catch (error) {
-            console.error("Error registering camera:", error.response ? error.response.data : error);
-            setSnackbarMessage('Failed to register camera. Please try again.');
+            setSnackbarMessage('Failed to register camera: ' + (error.response ? error.response.data : error.message));
+            setAlertSeverity('error');
             setOpenSnackbar(true);
         }
     };
@@ -116,7 +118,7 @@ const CameraRegistrationForm = () => {
                 </form>
             </Box>
             <Snackbar open={openSnackbar} autoHideDuration={6000} onClose={handleCloseSnackbar}>
-                <Alert onClose={handleCloseSnackbar} severity="success" sx={{ width: '100%' }}>
+                <Alert onClose={handleCloseSnackbar} severity={alertSeverity} sx={{ width: '100%' }}>
                     {snackbarMessage}
                 </Alert>
             </Snackbar>

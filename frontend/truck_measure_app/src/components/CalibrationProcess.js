@@ -17,6 +17,7 @@ const CalibrationProcess = ({ onCalibrationSuccess }) => {
     const [calibrating, setCalibrating] = useState(false);
     const [openSnackbar, setOpenSnackbar] = useState(false);
     const [calibrationSuccess, setCalibrationSuccess] = useState(false);
+    const [alertSeverity, setAlertSeverity] = useState('success');
 
     const handleCameraSelect = (cameraId) => {
         setSelectedCameraId(cameraId);
@@ -25,7 +26,9 @@ const CalibrationProcess = ({ onCalibrationSuccess }) => {
     const handleCalibration = async () => {
         setCalibrating(true);
         if (!selectedCameraId) {
-            console.error('Camera ID is required to start calibration');
+            setSnackbarMessage('Camera ID is required to start calibration');
+            setAlertSeverity('error');
+            setOpenSnackbar(true);
             setCalibrating(false);
             return;
         }
@@ -33,11 +36,14 @@ const CalibrationProcess = ({ onCalibrationSuccess }) => {
         try {
             const url = `${BASE_URL}/api/v1/calibration/${selectedCameraId}`;
             const response = await axios.post(url);
+            setSnackbarMessage('Calibration completed successfully!');
+            setAlertSeverity('success');
             setOpenSnackbar(true);
-            setCalibrationSuccess(true);
             if (onCalibrationSuccess) onCalibrationSuccess();
         } catch (error) {
-            console.error('Calibration error:', error);
+            setSnackbarMessage('Calibration error: ' + (error.response ? error.response.data : error.message));
+            setAlertSeverity('error');
+            setOpenSnackbar(true);
         } finally {
             setCalibrating(false);
         }
@@ -93,6 +99,11 @@ const CalibrationProcess = ({ onCalibrationSuccess }) => {
                     </Button>
                 </>
             )}
+            <Snackbar open={openSnackbar} autoHideDuration={6000} onClose={handleCloseSnackbar}>
+                <Alert onClose={handleCloseSnackbar} severity={alertSeverity} sx={{ width: '100%' }}>
+                    {snackbarMessage}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 };
