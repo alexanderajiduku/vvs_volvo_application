@@ -5,6 +5,7 @@ import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import SaveIcon from '@mui/icons-material/Save';
 import CameraList from './CameraList';
 import CustomTooltip from '../common/CustomToolTip';
+import { BASE_URL } from '../config/config';
 
 /**
  * Component for uploading images.
@@ -52,7 +53,7 @@ const ImageUploader = ({ onUploadSuccess }) => {
         const formData = new FormData();
         formData.append('file', selectedFile);
     
-        const uploadUrl = `http://localhost:8000/api/v1/uploadimages/${selectedCameraId}`;
+        const uploadUrl = `${BASE_URL}/api/v1/uploadimages/${selectedCameraId}`;
     
         try {
             await axios.post(uploadUrl, formData, {

@@ -1,6 +1,6 @@
 import axios from 'axios';
+import { BASE_URL } from '../config/config';
 
-const BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
 /**
  * AuthApi object for handling authentication-related API calls.

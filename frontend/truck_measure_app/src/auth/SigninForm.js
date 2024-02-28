@@ -65,11 +65,11 @@ const customTheme = createTheme({
 
 export default function SignIn() {
   const navigate = useNavigate();
-  const { setCurrentUser } = useUserContext(); // Destructure setCurrentUser from your context
+  const { setCurrentUser } = useUserContext(); 
   const [errorMessage, setErrorMessage] = useState('');
   const [openSnackbar, setOpenSnackbar] = useState(false);
 
-  // Define handleErrors within your component
+
   const handleErrors = (errors) => {
     setErrorMessage(errors.join(', '));
     setOpenSnackbar(true);

@@ -1,4 +1,5 @@
 import React from 'react';
+import { BASE_URL } from '../config/config';
 
 /**
  * Renders the annotated result display component.
@@ -7,7 +8,7 @@ import React from 'react';
  * @returns {JSX.Element} The rendered annotated result display component.
  */
 const AnnotatedResultDisplay = ({ fileUrl }) => {
-    const baseURL = "http://localhost:8000/static/";
+    const baseURL = `${BASE_URL}/static/`;
     const displayUrl = `${baseURL}${fileUrl}`;
 
 

@@ -30,7 +30,8 @@ const CalibrationProcess = ({ onCalibrationSuccess }) => {
         }
 
         try {
-            const url = `http://localhost:8000/api/v1/calibration/${selectedCameraId}`;
+            const url = `${BASE_URL}/api/v1/calibration/${selectedCameraId}`;
+            // const url = `http://localhost:8000/api/v1/calibration/${selectedCameraId}`;
             const response = await axios.post(url);
             setOpenSnackbar(true);
             setCalibrationSuccess(true);

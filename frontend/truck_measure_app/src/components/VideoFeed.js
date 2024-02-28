@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import AuthApi from '../api/api';
+import { BASE_URL } from '../config/config';  
+
 
 
 /**
@@ -13,7 +15,7 @@ import AuthApi from '../api/api';
 const VideoFeed = ({ isActive }) => {
   const [isError, setIsError] = useState(false);
   const camera_id = 1; 
-  const videoFeedUrl = `http://localhost:8000/video-feed/${camera_id}`;
+  const videoFeedUrl = `${BASE_URL}/video-feed/${camera_id}`;
 
   useEffect(() => {
     if (isActive) {

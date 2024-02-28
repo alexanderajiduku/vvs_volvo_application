@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Button, Typography, LinearProgress, Box, FormControl, Paper, useTheme, Snackbar, Alert, CircularProgress } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import CustomTooltip from '../common/CustomToolTip';
+import { BASE_URL } from '../config/config';
 
 /**
  * UltralyticsFileUpload component for uploading image or video files and making API requests.
@@ -21,6 +22,7 @@ const UltralyticsFileUpload = ({ selectedModelId, onUploadSuccess }) => {
 
     const handleFileChange = (event) => {
         const file = event.target.files[0];
+        console.log('File selected:', file); 
         if (file && ['image/jpeg', 'video/mp4'].includes(file.type)) {
             setSelectedFile(file);
             setError('');
@@ -39,9 +41,8 @@ const UltralyticsFileUpload = ({ selectedModelId, onUploadSuccess }) => {
         const formData = new FormData();
         formData.append('file', selectedFile);  
     
-        const uploadUrl = `http://localhost:8000/api/v1/inference/${selectedModelId}`;
+        const uploadUrl = `${BASE_URL}/api/v1/inference/${selectedModelId}`;
 
-    
         try {
             const response = await axios.post(uploadUrl, formData, {
                 headers: {

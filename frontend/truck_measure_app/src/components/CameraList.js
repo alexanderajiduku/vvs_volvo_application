@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Typography, Box, CircularProgress, Select, MenuItem } from '@mui/material';
+import { BASE_URL } from '../config/config';
 
 /**
  * Renders a list of cameras and allows the user to select a camera.
@@ -18,7 +19,7 @@ const CameraList = ({ onSelectCamera }) => {
     const fetchCameras = async () => {
       setLoading(true);
       try {
-        const response = await axios.get('http://localhost:8000/api/v1/camera');
+        const response = await axios.get(`${BASE_URL}/api/v1/camera`);
         setCameras(response.data);  
         setError(null);
       } catch (err) {

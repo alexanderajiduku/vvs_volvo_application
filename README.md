@@ -33,6 +33,8 @@ Try it out! ---> [VVS](https://vvs-volvo-application-frontend.onrender.com).
 ### User Interface (UI)
 - An intuitive and interactive interface for both technical and non-technical users, allowing for the seamless upload and analysis of images and videos, and customization of ML models.
 
+[Frontend repository](https://github.com/alexanderajiduku/vvs_volvo_application/tree/main/frontend)
+
 ### Processing and Analysis Core
 - A high-performance computing core capable of handling large volumes of high-resolution images and videos, applying ML models, and performing complex analyses with minimal latency.
 

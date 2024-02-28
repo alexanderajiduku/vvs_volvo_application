@@ -36,7 +36,7 @@ const CameraRegistrationForm = () => {
         };
     
         try {
-            await axios.post('http://localhost:8000/api/v1/registercamera', data, {
+            await axios.post(`${BASE_URL}/api/v1/registercamera`, data, {
                 headers: { 'Content-Type': 'application/json' }
             });
             setCameraName('');

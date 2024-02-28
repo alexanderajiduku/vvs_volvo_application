@@ -3,7 +3,7 @@ import { Box, Button, TextField, Typography, Snackbar, Alert } from '@mui/materi
 import SaveIcon from '@mui/icons-material/Save';
 import axios from 'axios';
 import CustomTooltip from '../common/CustomToolTip';
-
+import { BASE_URL } from '../config/config';
 /**
  * Represents a form for registering a model.
  * @returns {JSX.Element} The ModelForm component.
@@ -50,7 +50,7 @@ const ModelForm = () => {
     formData.append('file', modelFile);
 
     try {
-      const response = await axios.post(`http://localhost:8000/api/v1/model?name=${encodeURIComponent(name)}&description=${encodeURIComponent(description)}`, formData, {
+      const response = await axios.post(`${BASE_URL}/api/v1/model?name=${encodeURIComponent(name)}&description=${encodeURIComponent(description)}`, formData, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         },
