@@ -65,13 +65,15 @@ const customTheme = createTheme({
 
 export default function SignIn() {
   const navigate = useNavigate();
-  const { setCurrentUser } = useUserContext(); 
+  const { setCurrentUser } = useUserContext();
   const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState(''); 
   const [openSnackbar, setOpenSnackbar] = useState(false);
-
+  const [alertSeverity, setAlertSeverity] = useState('error'); 
 
   const handleErrors = (errors) => {
     setErrorMessage(errors.join(', '));
+    setAlertSeverity('error'); 
     setOpenSnackbar(true);
   };
 
@@ -82,22 +84,37 @@ export default function SignIn() {
       email: data.get('email'),
       password: data.get('password'),
     };
-
+  
     try {
       const response = await AuthApi.signin(formData);
       if (response.success) {
         setCurrentUser(response.user);
-        navigate('/protected/component');
+        setSuccessMessage('Sign in successful! Redirecting...');
+        setAlertSeverity('success');
+        setOpenSnackbar(true);
+        setTimeout(() => navigate('/protected/component'), 2000); // Delay for readability of the Snackbar
       } else {
-        console.error('SignIn failed with response:', response);
-        handleErrors(response.errors || ['Email or password is incorrect. Please try again.']);
+        // Handle specific error messages
+        let errorMsg = 'An error occurred. Please try again.'; // Default error message
+        if (typeof response.errors === 'string') {
+          // Directly use the string error message
+          errorMsg = response.errors;
+        } else if (Array.isArray(response.errors) && response.errors.length > 0) {
+          // Join array of error messages
+          errorMsg = response.errors.join(', ');
+        }
+        setErrorMessage(errorMsg);
+        setAlertSeverity('error');
+        setOpenSnackbar(true);
       }
     } catch (error) {
-      console.error('SignIn Error:', error);
-      setErrorMessage('An error occurred. Please try again.');
+      // Handle unexpected errors including network issues or server errors
+      setErrorMessage('An unexpected error occurred. Please try again.');
+      setAlertSeverity('error');
       setOpenSnackbar(true);
     }
   };
+  
   return (
     <ThemeProvider theme={customTheme}> 
       <Container component="main" maxWidth="xs">
@@ -171,8 +188,8 @@ export default function SignIn() {
           </Typography>
         </Box>
         <Snackbar open={openSnackbar} autoHideDuration={6000} onClose={() => setOpenSnackbar(false)}>
-          <Alert onClose={() => setOpenSnackbar(false)} severity="error" sx={{ width: '100%' }}>
-            {errorMessage}
+          <Alert onClose={() => setOpenSnackbar(false)} severity={alertSeverity} sx={{ width: '100%' }}>
+            {alertSeverity === 'error' ? errorMessage : successMessage}
           </Alert>
         </Snackbar>
       </Container>

@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import axios from 'axios';
-import { Button, Typography, LinearProgress, Box, FormControl, Paper, useTheme } from '@mui/material';
+import { Button, Typography, LinearProgress, Box, FormControl, Paper, useTheme, Snackbar, Alert } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import SaveIcon from '@mui/icons-material/Save';
 import CameraList from './CameraList';
@@ -21,6 +21,9 @@ const ImageUploader = ({ onUploadSuccess }) => {
     const [selectedFile, setSelectedFile] = useState(null);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [error, setError] = useState('');
+    const [openSnackbar, setOpenSnackbar] = useState(false);
+    const [snackbarMessage, setSnackbarMessage] = useState('');
+    const [alertSeverity, setAlertSeverity] = useState('success');
     const fileInputRef = useRef(null);
 
 
@@ -32,6 +35,9 @@ const ImageUploader = ({ onUploadSuccess }) => {
             setError('');
         } else {
             setError('Unsupported file type. Please select a .jpg or .png image.');
+            setOpenSnackbar(true);
+            setSnackbarMessage('Unsupported file type. Please select a .jpg or .png image.');
+            setAlertSeverity('error');
         }
     };
 
@@ -42,19 +48,25 @@ const ImageUploader = ({ onUploadSuccess }) => {
     const handleUpload = async () => {
         if (!selectedFile) {
             setError('No file selected');
+            setOpenSnackbar(true);
+            setSnackbarMessage('No file selected');
+            setAlertSeverity('error');
             return;
         }
-    
+
         if (!selectedCameraId) {
             setError('No camera selected');
+            setOpenSnackbar(true);
+            setSnackbarMessage('No camera selected');
+            setAlertSeverity('error');
             return;
         }
-    
+
         const formData = new FormData();
         formData.append('file', selectedFile);
-    
+
         const uploadUrl = `${BASE_URL}/api/v1/uploadimages/${selectedCameraId}`;
-    
+
         try {
             await axios.post(uploadUrl, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
@@ -68,10 +80,23 @@ const ImageUploader = ({ onUploadSuccess }) => {
             setUploadProgress(0);
             fileInputRef.current.value = null;
             if (onUploadSuccess) onUploadSuccess();
+            setOpenSnackbar(true);
+            setSnackbarMessage('Image uploaded successfully!');
+            setAlertSeverity('success');
         } catch (error) {
             setError(`Error uploading image: ${error.message}`);
             setUploadProgress(0);
+            setOpenSnackbar(true);
+            setSnackbarMessage(`Error uploading image: ${error.message}`);
+            setAlertSeverity('error');
         }
+    };
+
+    const handleCloseSnackbar = (event, reason) => {
+        if (reason === 'clickaway') {
+            return;
+        }
+        setOpenSnackbar(false);
     };
     return (
         <Paper elevation={3} sx={{ p: theme.spacing(3), mt: theme.spacing(3), bgcolor: '#121212', color: '#fff' }}>
@@ -121,6 +146,11 @@ const ImageUploader = ({ onUploadSuccess }) => {
                 )}
             </Box>
             {error && <Typography color="error" sx={{ mt: theme.spacing(2) }}>{error}</Typography>}
+            <Snackbar open={openSnackbar} autoHideDuration={6000} onClose={handleCloseSnackbar}>
+                <Alert onClose={handleCloseSnackbar} severity={alertSeverity} sx={{ width: '100%' }}>
+                    {snackbarMessage}
+                </Alert>
+            </Snackbar>
         </Paper>
     );
 };

@@ -1,18 +1,18 @@
 import React, { useRef, useState } from 'react';
+import axios from 'axios';
 import { Box, Button, TextField, Typography, Snackbar, Alert } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
-import axios from 'axios';
 import CustomTooltip from '../common/CustomToolTip';
 import { BASE_URL } from '../config/config';
-/**
- * Represents a form for registering a model.
- * @returns {JSX.Element} The ModelForm component.
- */
+
 const ModelForm = () => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [modelFile, setModelFile] = useState(null);
   const [error, setError] = useState('');
+  const [openSnackbar, setOpenSnackbar] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [alertSeverity, setAlertSeverity] = useState('error'); // Default to 'error' since we already have error handling
   const fileInputRef = useRef(null);
 
   const handleNameChange = (event) => setName(event.target.value);
@@ -24,6 +24,9 @@ const ModelForm = () => {
   
     if (!allowedExtensions.includes(fileExtension)) {
       setError(`File type '${fileExtension}' is not allowed. Only ${allowedExtensions.join(', ')} files are accepted.`);
+      setOpenSnackbar(true);
+      setSnackbarMessage(`File type '${fileExtension}' is not allowed. Only ${allowedExtensions.join(', ')} files are accepted.`);
+      setAlertSeverity('error');
       setModelFile(null);
       fileInputRef.current.value = ''; 
     } else {
@@ -31,16 +34,21 @@ const ModelForm = () => {
       setError('');
     }
   };
-  
 
   const handleButtonClick = () => fileInputRef.current.click();
 
-  const handleCloseSnackbar = () => setError('');
+  const handleCloseSnackbar = () => {
+    setOpenSnackbar(false);
+    setError(''); // Reset error when Snackbar is closed
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (!modelFile) {
       setError('Please select a file to upload.');
+      setOpenSnackbar(true);
+      setSnackbarMessage('Please select a file to upload.');
+      setAlertSeverity('error');
       return;
     }
 
@@ -50,7 +58,7 @@ const ModelForm = () => {
     formData.append('file', modelFile);
 
     try {
-      const response = await axios.post(`${BASE_URL}/api/v1/model?name=${encodeURIComponent(name)}&description=${encodeURIComponent(description)}`, formData, {
+      await axios.post(`${BASE_URL}/api/v1/model?name=${encodeURIComponent(name)}&description=${encodeURIComponent(description)}`, formData, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         },
@@ -59,10 +67,15 @@ const ModelForm = () => {
       setDescription('');
       setModelFile(null);
       fileInputRef.current.value = ''; 
-      setError(''); 
+      setOpenSnackbar(true);
+      setSnackbarMessage('Model uploaded successfully!');
+      setAlertSeverity('success');
     } catch (error) {
       console.error('Error uploading model:', error.response ? error.response.data : error);
       setError(error.response?.data?.detail?.join(', ') || 'An unexpected error occurred during model upload. Please try again.');
+      setOpenSnackbar(true);
+      setSnackbarMessage(error.response?.data?.detail?.join(', ') || 'An unexpected error occurred during model upload. Please try again.');
+      setAlertSeverity('error');
     }
   };
 
@@ -119,13 +132,11 @@ const ModelForm = () => {
       >
         Upload Model
       </Button>
-      {error && (
-        <Snackbar open={Boolean(error)} autoHideDuration={6000} onClose={handleCloseSnackbar}>
-          <Alert onClose={handleCloseSnackbar} severity="error" sx={{ width: '100%' }}>
-            {error}
-          </Alert>
-        </Snackbar>
-      )}
+      <Snackbar open={openSnackbar} autoHideDuration={6000} onClose={handleCloseSnackbar}>
+        <Alert onClose={handleCloseSnackbar} severity={alertSeverity} sx={{ width: '100%' }}>
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
