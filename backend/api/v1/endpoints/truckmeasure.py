@@ -20,13 +20,13 @@ async def process_truck_measure_endpoint(model_id: int, file: UploadFile = File(
     if file_extension not in ['mp4', 'avi']:
         raise HTTPException(status_code=400, detail="Unsupported file type")
 
-    # Save the uploaded video file
     input_file_path = os.path.join(UPLOAD_DIR, f"{uuid.uuid4()}.{file_extension}")
     with open(input_file_path, 'wb') as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    # Process the video file for truck measurement
-    output_file_path = vehicle_detection_service.process_video(input_file_path)
+    # output_file_path = vehicle_detection_service.process_video(input_file_path)
+    vehicle_detection_service.process_video(input_file_path)
 
-    # Return the processed video file
-    return FileResponse(output_file_path, media_type="application/octet-stream", filename=os.path.basename(output_file_path))
+   
+    # return FileResponse(output_file_path, media_type="application/octet-stream", filename=os.path.basename(output_file_path))
+    return {"message": "Video processed successfully, vehicle heights saved in database."}

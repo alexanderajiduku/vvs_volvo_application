@@ -66,10 +66,10 @@ class VehicleDetectionService:
         if not cap.isOpened():
             raise IOError("Could not open video file")
 
-        frame_width = int(cap.get(3))
-        frame_height = int(cap.get(4))
-        output_video_path = os.path.join(self.output_dir, os.path.basename(input_video_path).split('.')[0] + '_processed.avi')
-        out = cv2.VideoWriter(output_video_path, cv2.VideoWriter_fourcc(*'XVID'), 20.0, (frame_width, frame_height))
+        # frame_width = int(cap.get(3))
+        # frame_height = int(cap.get(4))
+        # output_video_path = os.path.join(self.output_dir, os.path.basename(input_video_path).split('.')[0] + '_processed.avi')
+        # out = cv2.VideoWriter(output_video_path, cv2.VideoWriter_fourcc(*'XVID'), 20.0, (frame_width, frame_height))
 
         while cap.isOpened():
             ret, frame = cap.read()
@@ -81,11 +81,11 @@ class VehicleDetectionService:
             self.draw_lines(frame)
             self.display_vehicle_info(frame)
 
-            out.write(frame)
+        #     out.write(frame)
 
         cap.release()
-        out.release()
-        return output_video_path
+        # out.release()
+        # return output_video_path
 
     def detect_and_track(self, frame: np.ndarray):
         results = self.detection_model.predict(frame)
