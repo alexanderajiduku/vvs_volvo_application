@@ -22,17 +22,6 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 @router.post("/inference/{model_id}")
 async def upload_file(model_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
-    """
-    Uploads a file for YOLO inference and annotation.
-
-    Parameters:
-    - model_id (int): The ID of the YOLO model to use for inference.
-    - file (UploadFile): The file to be uploaded for inference.
-    - db (Session): The database session.
-
-    Returns:
-    - dict: A dictionary containing the uploaded file information and the detection results.
-    """
     try:
         yolo_service = YOLOService(model_id=model_id, db_session=db)
     except ValueError as e:

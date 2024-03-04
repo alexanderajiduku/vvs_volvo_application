@@ -13,22 +13,6 @@ from app.models.model import Model
 logger = logging.getLogger(__name__)
 
 class YOLOService:
-    """
-    A class that provides services for predicting and annotating images and videos using YOLO models.
-
-    Args:
-        model_id (int): The ID of the YOLO model to use for predictions.
-        db_session (Session): The database session object.
-
-    Attributes:
-        yolo_model (YOLO): The YOLO model object.
-        annotated_dir (str): The directory path for storing annotated results.
-
-    Methods:
-        predict_and_annotate_image: Predicts and annotates an image.
-        predict_and_annotate_video: Predicts and annotates a video.
-    """
-
     def __init__(self, model_id: int, db_session: Session):
         model = db_session.query(Model).filter(Model.id == model_id).first()
         if model is None:
@@ -43,15 +27,6 @@ class YOLOService:
         os.makedirs(self.annotated_dir, exist_ok=True)
 
     def predict_and_annotate_image(self, img_path: str) -> Dict[str, Any]:
-        """
-        Predicts and annotates an image.
-
-        Args:
-            img_path (str): The path to the input image.
-
-        Returns:
-            dict: A dictionary containing the original filename, annotated filename, and annotated filepath.
-        """
         img = cv2.imread(img_path)
         if img is None:
             raise ValueError(f"Could not read the image from {img_path}")
@@ -74,15 +49,6 @@ class YOLOService:
         }
 
     def predict_and_annotate_video(self, video_path: str) -> Dict[str, Any]:
-        """
-        Predicts and annotates a video.
-
-        Args:
-            video_path (str): The path to the input video.
-
-        Returns:
-            dict: A dictionary containing the original filename, annotated filename, and annotated filepath.
-        """
         cap = cv2.VideoCapture(video_path)
         if not cap.isOpened():
             logger.error(f"Could not open video {video_path}")
