@@ -68,7 +68,7 @@ const Navigation = () => {
                 </Toolbar>
             </Container>
         </AppBar>
-    );
+    );   
 };
 
 export default Navigation;
