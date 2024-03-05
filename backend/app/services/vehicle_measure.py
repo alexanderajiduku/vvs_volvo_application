@@ -61,15 +61,23 @@ class VehicleDetectionService:
         self.vehicle_display_info = {}
         self.display_duration = 60
 
-    def process_video(self, input_video_path: str) -> str:
-        cap = cv2.VideoCapture(input_video_path)
-        if not cap.isOpened():
-            raise IOError("Could not open video file")
+   
 
-        # frame_width = int(cap.get(3))
-        # frame_height = int(cap.get(4))
-        # output_video_path = os.path.join(self.output_dir, os.path.basename(input_video_path).split('.')[0] + '_processed.avi')
-        # out = cv2.VideoWriter(output_video_path, cv2.VideoWriter_fourcc(*'XVID'), 20.0, (frame_width, frame_height))
+    def process_video(self, input_source: str):
+        # Check if the input_source is a digit (e.g., '0' for the default webcam) or a valid file path
+        if input_source.isdigit():
+            # Input source is a webcam ID
+            cap = cv2.VideoCapture(int(input_source))
+        elif os.path.exists(input_source):
+            # Input source is a valid file path
+            cap = cv2.VideoCapture(input_source)
+        else:
+            raise IOError("Invalid input source. Provide a valid video file path or webcam ID.")
+
+        if not cap.isOpened():
+            raise IOError("Could not open video source")
+
+        frame_count = 0  # Initialize a counter for frames
 
         while cap.isOpened():
             ret, frame = cap.read()
@@ -77,15 +85,16 @@ class VehicleDetectionService:
                 break
 
             frame = cv2.resize(frame, (1020, 500))
-            self.detect_and_track(frame)
+            for height in self.detect_and_track(frame):  # Process each height yielded by detect_and_track
+                frame_count += 1
+                yield f"Frame {frame_count}: Detected height - {height}\n"
+
             self.draw_lines(frame)
             self.display_vehicle_info(frame)
 
-        #     out.write(frame)
-
         cap.release()
-        # out.release()
-        # return output_video_path
+
+
 
     def detect_and_track(self, frame: np.ndarray):
         results = self.detection_model.predict(frame)
@@ -107,12 +116,14 @@ class VehicleDetectionService:
                     seg_img = cv2.resize(seg_img, None, fx=0.7, fy=0.7)
                     _, _, seg_contours, _ = self.segmentation_model.detect(seg_img)
                     for seg in seg_contours:
-                        y_coords = seg[:, 1]  
+                        y_coords = seg[:, 1]
                         min_y = np.min(y_coords)
                         max_y = np.max(y_coords)
-                        vertical_extent = int(max_y - min_y) 
+                        vertical_extent = int(max_y - min_y)
                         new_height = VehicleDetail(vehicle_id=str(id), height=vertical_extent)
                         self.db_session.add(new_height)
+                        yield vertical_extent  
+
         self.db_session.commit()
 
     def draw_lines(self, frame: np.ndarray):
