@@ -1,5 +1,3 @@
-# services/vehicle_detection_service.py
-
 import cv2
 import numpy as np
 import pandas as pd
@@ -11,15 +9,15 @@ from app.models.model import Model
 from .yolo_segmentation import YOLOSegmentation  
 from app.models.vehicledetails import VehicleDetail
 from ultralytics import YOLO  
-
-
+import asyncio
+from app.shared.shared import height_queue
 
 class VehicleDetectionService:
     def __init__(self, model_id: int, db_session: Session, output_dir: str = 'processed_videos', detected_frames_dir: str = 'detected_frames'):
         model = db_session.query(Model).filter(Model.id == model_id).first()
         if model is None:
             raise ValueError(f"Model with ID {model_id} not found in the database")
-        model_path = os.path.join('uploaded_models', model.filename)  # Adjust the path as needed
+        model_path = os.path.join('uploaded_models', model.filename)  
 
         if not os.path.exists(model_path):
             raise FileNotFoundError(f"YOLO model file not found at {model_path}")
@@ -31,27 +29,25 @@ class VehicleDetectionService:
         self.output_dir = output_dir
         self.detected_frames_dir = detected_frames_dir
 
-        # Ensure output directories exist
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
         if not os.path.exists(self.detected_frames_dir):
             os.makedirs(self.detected_frames_dir)
 
-        
         self.class_list = [
-    "person", "bicycle", "car", "motorcycle", "airplane",
-    "bus", "train", "truck", "boat", "traffic light", "fire hydrant",
-    "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse",
-    "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack",
-    "umbrella", "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard",
-    "sports ball", "kite", "baseball bat", "baseball glove", "skateboard",
-    "surfboard", "tennis racket", "bottle", "wine glass", "cup", "fork", "knife",
-    "spoon", "bowl", "banana", "apple", "sandwich", "orange", "broccoli", "carrot",
-    "hot dog", "pizza", "donut", "cake", "chair", "couch", "potted plant", "bed",
-    "dining table", "toilet", "tv", "laptop", "mouse", "remote", "keyboard",
-    "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "book",
-    "clock", "vase", "scissors", "teddy bear", "hair drier", "toothbrush"
-]
+            "person", "bicycle", "car", "motorcycle", "airplane",
+            "bus", "train", "truck", "boat", "traffic light", "fire hydrant",
+            "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse",
+            "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack",
+            "umbrella", "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard",
+            "sports ball", "kite", "baseball bat", "baseball glove", "skateboard",
+            "surfboard", "tennis racket", "bottle", "wine glass", "cup", "fork", "knife",
+            "spoon", "bowl", "banana", "apple", "sandwich", "orange", "broccoli", "carrot",
+            "hot dog", "pizza", "donut", "cake", "chair", "couch", "potted plant", "bed",
+            "dining table", "toilet", "tv", "laptop", "mouse", "remote", "keyboard",
+            "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "book",
+            "clock", "vase", "scissors", "teddy bear", "hair drier", "toothbrush"
+        ]
 
         self.red_line_x = 198
         self.blue_line_x = 868
@@ -61,15 +57,11 @@ class VehicleDetectionService:
         self.vehicle_display_info = {}
         self.display_duration = 60
 
-   
 
-    def process_video(self, input_source: str):
-        # Check if the input_source is a digit (e.g., '0' for the default webcam) or a valid file path
+    async def process_video(self, input_source: str):
         if input_source.isdigit():
-            # Input source is a webcam ID
             cap = cv2.VideoCapture(int(input_source))
         elif os.path.exists(input_source):
-            # Input source is a valid file path
             cap = cv2.VideoCapture(input_source)
         else:
             raise IOError("Invalid input source. Provide a valid video file path or webcam ID.")
@@ -77,7 +69,44 @@ class VehicleDetectionService:
         if not cap.isOpened():
             raise IOError("Could not open video source")
 
-        frame_count = 0  # Initialize a counter for frames
+        async for height in self.detect_and_track(cap):
+            pass
+
+        cap.release()
+
+    # async def stream_video(self, input_source: str):
+    #     if input_source.isdigit():
+    #         cap = cv2.VideoCapture(int(input_source))
+    #     elif os.path.exists(input_source):
+    #         cap = cv2.VideoCapture(input_source)
+    #     else:
+    #         raise IOError("Invalid input source. Provide a valid video file path or webcam ID.")
+
+    #     if not cap.isOpened():
+    #         raise IOError("Could not open video source")
+
+    #     while cap.isOpened():
+    #         ret, frame = cap.read()
+    #         if not ret:
+    #             break
+
+    #         frame = cv2.resize(frame, (1020, 500))
+    #         self.draw_lines(frame)
+    #         self.display_vehicle_info(frame)
+    #         ret, buffer = cv2.imencode('.jpg', frame)
+    #         if ret:
+    #             yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
+    #         else:
+    #             break
+
+    #     cap.release()
+        
+    async def stream_video(self, input_source: str):
+        cap = cv2.VideoCapture(input_source)
+        if not cap.isOpened():
+            raise IOError("Could not open video source")
+
+        loop = asyncio.get_running_loop()  # Get the current event loop
 
         while cap.isOpened():
             ret, frame = cap.read()
@@ -85,36 +114,52 @@ class VehicleDetectionService:
                 break
 
             frame = cv2.resize(frame, (1020, 500))
-            for height in self.detect_and_track(frame):  # Process each height yielded by detect_and_track
-                frame_count += 1
-                yield f"Frame {frame_count}: Detected height - {height}\n"
+            
+            # Use an async for loop to consume values from the async generator
+            async for _ in self.detect_and_track_single_frame(loop, frame):
+                pass  # Here you could process each height value if needed
 
             self.draw_lines(frame)
             self.display_vehicle_info(frame)
+            ret, buffer = cv2.imencode('.jpg', frame)
+            if ret:
+                yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
 
         cap.release()
 
 
 
-    def detect_and_track(self, frame: np.ndarray):
-        results = self.detection_model.predict(frame)
+
+    async def detect_and_track(self, cap):
+        loop = asyncio.get_running_loop()  
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret:
+                break
+            
+            frame = cv2.resize(frame, (1020, 500))
+            async for height in self.detect_and_track_single_frame(loop, frame):  
+                yield height
+
+    async def detect_and_track_single_frame(self, loop, frame):
+        results = await loop.run_in_executor(None, self.detection_model.predict, frame)
         boxes = results[0].boxes.data.detach().cpu().numpy()
         detections = pd.DataFrame(boxes).astype("float")
 
         detected_cars = [row[:4].astype(int).tolist() for index, row in detections.iterrows() if self.class_list[int(row[5])] == 'car']
-        bbox_id = self.tracker.update(detected_cars)
+        bbox_id = await loop.run_in_executor(None, self.tracker.update, detected_cars)
 
         for bbox in bbox_id:
             x3, y3, x4, y4, id = bbox
             cx = int((x3 + x4) / 2)
             if self.center_line_x - self.offset < cx < self.center_line_x + self.offset and id not in self.vehicle_process:
                 self.vehicle_process[id] = 'crossed'
-                frame_path = os.path.join(self.detected_frames_dir, f'vehicle_{id}_center_line.jpg')
-                cv2.imwrite(frame_path, frame)
-                seg_img = cv2.imread(frame_path)
-                if seg_img is not None:
+                seg_img = frame[y3:y4, x3:x4]
+                if seg_img.size != 0:
+                    frame_path = os.path.join(self.detected_frames_dir, f'vehicle_{id}_measurement_frame.jpg')
+                    cv2.imwrite(frame_path, frame)
                     seg_img = cv2.resize(seg_img, None, fx=0.7, fy=0.7)
-                    _, _, seg_contours, _ = self.segmentation_model.detect(seg_img)
+                    _, _, seg_contours, _ = await loop.run_in_executor(None, self.segmentation_model.detect, seg_img)
                     for seg in seg_contours:
                         y_coords = seg[:, 1]
                         min_y = np.min(y_coords)
@@ -122,9 +167,10 @@ class VehicleDetectionService:
                         vertical_extent = int(max_y - min_y)
                         new_height = VehicleDetail(vehicle_id=str(id), height=vertical_extent)
                         self.db_session.add(new_height)
-                        yield vertical_extent  
+                        self.db_session.commit()
+                        yield vertical_extent
 
-        self.db_session.commit()
+            self.db_session.commit()
 
     def draw_lines(self, frame: np.ndarray):
         cv2.line(frame, (self.red_line_x, 0), (self.red_line_x, frame.shape[0]), (0, 0, 255), 2)

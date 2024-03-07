@@ -33,6 +33,9 @@ const Navigation = () => {
                     <Button variant="text" component={NavLink} to="/ultralytics" sx={{ color: 'white', mr: 2 }}>
                         Ultralytics
                     </Button>
+                    <Button variant="text" component={NavLink} to="/truckmeasure" sx={{ color: 'white', mr: 2 }}>
+                        Truck Measure
+                    </Button>
                     <Button onClick={handleLogout} sx={{ color: 'white' }}>
                         Log out {displayName}
                     </Button>

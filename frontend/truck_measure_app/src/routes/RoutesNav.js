@@ -8,6 +8,7 @@ import MLModel from "../components/MLModel";
 import AIProcesses from "../components/AIProcesses"; 
 import SigninForm from "../auth/SigninForm";
 import Ultralytics from "../components/Ultralytics";
+import TruckMeasure from "../components/TruckMeasure";
 
 const RoutesNav = ({signin, signup}) => {
     return (
@@ -37,7 +38,11 @@ const RoutesNav = ({signin, signup}) => {
                         <Ultralytics />
                     </PrivateRoute>
                 } />
-                {/* Redirect to home if no matching route */}
+                  <Route path="/truckmeasure" element={
+                    <PrivateRoute>
+                        <TruckMeasure />
+                    </PrivateRoute>
+                } />
                 <Route path="/*" element={<Navigate to="/" />} />
             </Routes>
         </div>

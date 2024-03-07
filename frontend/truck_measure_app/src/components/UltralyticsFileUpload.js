@@ -30,7 +30,7 @@ const UltralyticsFileUpload = ({ selectedModelId, onUploadSuccess }) => {
             setError('Unsupported file type. Please select a JPG image or MP4 video.');
         }
     };
-
+ 
     const handleUpload = async () => {
         setError('');
         if (!selectedFile || !selectedModelId) {

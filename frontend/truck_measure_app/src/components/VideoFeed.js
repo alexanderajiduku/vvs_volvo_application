@@ -1,49 +1,70 @@
 import React, { useState, useEffect } from 'react';
-import AuthApi from '../api/api';
-import { BASE_URL } from '../config/config';  
+import AuthApi from '../api/api'; // Assuming this is where you get your auth token
+import { BASE_URL } from '../config/config'; // Your API base URL
+import { CircularProgress, Typography, Box } from '@mui/material';
 
-
-
-/**
- * Renders a component that displays a live video feed.
- *
- * @component
- * @param {Object} props - The component props.
- * @param {boolean} props.isActive - Indicates whether the video feed is active.
- * @returns {JSX.Element} The rendered VideoFeed component.
- */
-const VideoFeed = ({ isActive }) => {
+const VideoFeed = ({ isActive, modelId, inputSource }) => {
+  const [isLoading, setIsLoading] = useState(false);
   const [isError, setIsError] = useState(false);
-  const camera_id = 1; 
-  const videoFeedUrl = `${BASE_URL}/video-feed/${camera_id}`;
+  const [videoStream, setVideoStream] = useState(null);
 
   useEffect(() => {
-    if (isActive) {
-      const authToken = AuthApi.getAuthToken();
-      fetch(videoFeedUrl, {
-        headers: {
-          'Authorization': `Bearer ${authToken}` 
-        }
-      }).then(response => {
+    const fetchVideoStream = async () => {
+      if (!modelId || !isActive || !inputSource) {
+        return;
+      }
+      setIsLoading(true);
+      setIsError(false); 
+      try {
+        const authToken = AuthApi.getAuthToken(); 
+        const encodedInputSource = encodeURIComponent(inputSource);
+        const response = await fetch(`${BASE_URL}/stream-processed-video/${modelId}?input_source=${encodedInputSource}`, {
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        });
+
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }
-      }).catch(() => {
-        setIsError(true);
-      });
-    }
-  }, [isActive, videoFeedUrl]);
+        setVideoStream(URL.createObjectURL(await response.blob()));
+      } catch (error) {
+        console.error('Error loading video feed:', error);
+        setIsError(true); 
+      } finally {
+        setIsLoading(false); 
+      }
+    };
+
+    fetchVideoStream();
+  }, [isActive, modelId, inputSource]); 
+
+  if (isLoading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center">
+        <CircularProgress />
+      </Box>
+    );
+  }
+
   if (isError) {
-    return <div>Error loading video feed. Please try again later.</div>;
+    return (
+      <Typography variant="body1" color="error" align="center">
+        Error loading video feed. Please try again later.
+      </Typography>
+    );
   }
 
   return (
-    <div>
-      <h2>Live Video Feed</h2>
-      <img src={videoFeedUrl} alt="Live Video Feed" />
-    </div>
+    <Box>
+      <Typography variant="h5" gutterBottom align="center">
+        Live Video Feed
+      </Typography>
+      {videoStream && (
+        <video src={videoStream} controls autoPlay style={{ width: '100%' }} alt="Live Video Feed" />
+      )}
+    </Box>
   );
 };
-
 
 export default VideoFeed;
