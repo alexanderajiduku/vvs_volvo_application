@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import Button from '@mui/material/Button';
 import axios from 'axios';
-import { BASE_URL } from '../config/config'; 
-import ModelSelection from './ModelSelection'; 
+import { BASE_URL } from '../config/config';
+import ModelSelection from './ModelSelection';
+import WebSocketVideoFeed from './WebSocketVideoFeed'; // Import WebSocket component
 
-const VideoUploadAndProcess = ({ onUploadSuccess }) => {
+const VideoUploadAndProcess = ({ onUploadSuccess }) => { // Pass onUploadSuccess function as a prop
     const [selectedFile, setSelectedFile] = useState(null);
     const [modelId, setModelId] = useState('');
 
@@ -35,7 +36,7 @@ const VideoUploadAndProcess = ({ onUploadSuccess }) => {
 
                 if (response.data) {
                     console.log(response.data.message);
-                    onUploadSuccess();
+                    onUploadSuccess(modelId); // Trigger WebSocket initialization upon successful upload
                 }
             } catch (error) {
                 console.error('Error uploading file:', error);

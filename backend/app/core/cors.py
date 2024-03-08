@@ -1,12 +1,11 @@
-# app/config/cors.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 def setup_cors(app):
     origins = [
-        "https://vvs-volvo-application-frontend.onrender.com",
-        "http://localhost:3000"
-    ]
+      'http://localhost:3000',  
+    'chrome-extension://cbcbkhdmedgianpaifchdaddpnmgnknn'
+]
 
     app.add_middleware(
         CORSMiddleware,

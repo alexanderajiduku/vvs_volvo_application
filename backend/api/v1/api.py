@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from api.v1.endpoints import auth , uploadimages, calibration, camera, getuploadedimages, camera, model, videofeed, ultralytics, truckmeasure, websocketheight
+from api.v1.endpoints import auth , uploadimages, calibration, camera, getuploadedimages, camera, model, videofeed, ultralytics, truckmeasure, websocket_stream_video
 
 
 api_router = APIRouter()
@@ -12,7 +12,7 @@ api_router.include_router(model.router, tags=["model"])
 api_router.include_router(videofeed.router, tags=["videofeed"])
 api_router.include_router(ultralytics.router, tags=["ultralytics"])
 api_router.include_router(truckmeasure.router, tags=["truckmeasure"])
-
+api_router.include_router(websocket_stream_video.router, tags=["websocket_stream_video"])
 
 """
 This file defines the API router for the backend application.

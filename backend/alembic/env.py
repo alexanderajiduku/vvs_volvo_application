@@ -12,6 +12,7 @@ from app.models.model import Base
 from app.models.ultralytics import Base
 from app.models.annotatedfiles import Base
 from app.models.vehicledetails import Base
+from app.models.videos import Base
 
 config = context.config
 

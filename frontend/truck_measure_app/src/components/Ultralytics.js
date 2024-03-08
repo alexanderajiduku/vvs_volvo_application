@@ -16,7 +16,6 @@ const Ultralytics = () => {
   const [fileUrl, setFileUrl] = useState('');
 
 
-
   const handleModelSelected = (modelId) => {
     setSelectedModelId(modelId);  
   };

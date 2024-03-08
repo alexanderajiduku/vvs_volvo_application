@@ -1,70 +1,76 @@
-import React, { useState, useEffect } from 'react';
-import AuthApi from '../api/api'; // Assuming this is where you get your auth token
-import { BASE_URL } from '../config/config'; // Your API base URL
-import { CircularProgress, Typography, Box } from '@mui/material';
+// import React, { useEffect, useRef, useState } from 'react';
+// import { CircularProgress, Typography, Box } from '@mui/material';
 
-const VideoFeed = ({ isActive, modelId, inputSource }) => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [isError, setIsError] = useState(false);
-  const [videoStream, setVideoStream] = useState(null);
+// const VideoFeed = ({ isActive, modelId }) => {
+//   const [isLoading, setIsLoading] = useState(true);
+//   const [isError, setIsError] = useState(false);
+//   const canvasRef = useRef(null);
 
-  useEffect(() => {
-    const fetchVideoStream = async () => {
-      if (!modelId || !isActive || !inputSource) {
-        return;
-      }
-      setIsLoading(true);
-      setIsError(false); 
-      try {
-        const authToken = AuthApi.getAuthToken(); 
-        const encodedInputSource = encodeURIComponent(inputSource);
-        const response = await fetch(`${BASE_URL}/stream-processed-video/${modelId}?input_source=${encodedInputSource}`, {
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
-        });
+//   useEffect(() => {
+//     if (!isActive || !modelId) {
+//       setIsLoading(false);
+//       return;
+//     }
 
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
-        setVideoStream(URL.createObjectURL(await response.blob()));
-      } catch (error) {
-        console.error('Error loading video feed:', error);
-        setIsError(true); 
-      } finally {
-        setIsLoading(false); 
-      }
-    };
+//     // Construct WebSocket URL
+//     const wsBaseUrl = process.env.NODE_ENV === 'development'
+//       ? `ws://${window.location.hostname}:8000`
+//       : `wss://${window.location.hostname}`;
+//     const wsUrl = `${wsBaseUrl}/ws/stream-processed-video/${modelId}`;
 
-    fetchVideoStream();
-  }, [isActive, modelId, inputSource]); 
+//     const ws = new WebSocket(wsUrl);
 
-  if (isLoading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center">
-        <CircularProgress />
-      </Box>
-    );
-  }
+//     ws.onopen = () => {
+//       console.log('WebSocket Connected');
+//       setIsLoading(false);
+//     };
 
-  if (isError) {
-    return (
-      <Typography variant="body1" color="error" align="center">
-        Error loading video feed. Please try again later.
-      </Typography>
-    );
-  }
+//     ws.onmessage = (event) => {
+//       const data = event.data;
+//       if (data instanceof Blob) {
+//         const url = URL.createObjectURL(data);
+//         const image = new Image();
+//         image.onload = () => {
+//           if (canvasRef.current) {
+//             const ctx = canvasRef.current.getContext('2d');
+//             ctx.drawImage(image, 0, 0, canvasRef.current.width, canvasRef.current.height);
+//           }
+//           URL.revokeObjectURL(url); // Clean up
+//         };
+//         image.src = url;
+//       }
+//     };
 
-  return (
-    <Box>
-      <Typography variant="h5" gutterBottom align="center">
-        Live Video Feed
-      </Typography>
-      {videoStream && (
-        <video src={videoStream} controls autoPlay style={{ width: '100%' }} alt="Live Video Feed" />
-      )}
-    </Box>
-  );
-};
+//     ws.onerror = (error) => {
+//       console.error('WebSocket Error:', error);
+//       setIsError(true);
+//       setIsLoading(false);
+//     };
 
-export default VideoFeed;
+//     ws.onclose = () => {
+//       console.log('WebSocket Disconnected');
+//       setIsLoading(false);
+//     };
+
+//     return () => {
+//       ws.close();
+//     };
+//   }, [isActive, modelId]);
+
+//   if (isLoading) {
+//     return <Box display="flex" justifyContent="center" alignItems="center"><CircularProgress /></Box>;
+//   }
+
+//   if (isError) {
+//     return <Typography variant="body1" color="error" align="center">Error loading video feed. Please try again later.</Typography>;
+//   }
+
+//   return (
+//     <Box>
+//       <Typography variant="h5" gutterBottom align="center">Live Video Feed</Typography>
+//       <canvas ref={canvasRef} width="640" height="480" style={{ width: '75%' }}></canvas>
+//     </Box>
+//   );
+// };
+
+// export default VideoFeed;
