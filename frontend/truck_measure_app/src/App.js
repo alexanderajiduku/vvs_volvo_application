@@ -3,7 +3,7 @@ import { BrowserRouter } from "react-router-dom";
 import "./App.css";
 import RoutesNav from "./routes/RoutesNav";
 import Navigation from "./routes/Navigation";
-import { jwtDecode } from "jwt-decode";
+import {jwtDecode} from "jwt-decode";
 import useLocalStorage from "./hooks/useLocalStorage";
 import AuthApi from "./api/api";
 import LoadingSpinner from "./common/LoadingSpinner";
@@ -11,21 +11,17 @@ import { UserProvider } from "./auth/UserContext";
 import { ThemeProvider } from '@mui/material/styles';
 import theme from './theme';
 import CssBaseline from '@mui/material/CssBaseline';
+import socket from "./socket";
 
 export const TOKEN_STORAGE_ID = "Authtoken";
 
-/**
- * The main component of the application.
- * @returns {JSX.Element} The rendered App component.
- */
+
 const App = () => {
   const [infoLoaded, setInfoLoaded] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [token, setToken] = useLocalStorage(TOKEN_STORAGE_ID);
 
   useEffect(() => {
-    console.debug("App useEffect loadUserInfo", "token=", token);
-
     const loadUserInfo = async () => {
       if (token) {
         try {
@@ -43,6 +39,20 @@ const App = () => {
 
     setInfoLoaded(false);
     loadUserInfo();
+
+    socket.on('connect', () => {
+      console.log('Connected to server');
+    });
+
+    socket.on('disconnect', () => {
+      console.log('Disconnected from server');
+    });
+
+    return () => {
+      socket.off('connect');
+      socket.off('disconnect');
+      socket.disconnect();
+    };
   }, [token]);
 
   const logout = () => {
@@ -77,16 +87,14 @@ const App = () => {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <UserProvider>
-        <BrowserRouter>
-          <UserProvider value={{ currentUser, setCurrentUser }}>
-            <div className="wallpaper">
-              <Navigation logout={logout} />
-              <RoutesNav signin={signin} signup={signup} />
-            </div>
-          </UserProvider>
-        </BrowserRouter>
-      </UserProvider>
+      <BrowserRouter>
+        <UserProvider value={{ currentUser, setCurrentUser }}>
+          <div className="wallpaper">
+            <Navigation logout={logout} />
+            <RoutesNav signin={signin} signup={signup} />
+          </div>
+        </UserProvider>
+      </BrowserRouter>
     </ThemeProvider>
   );
 }

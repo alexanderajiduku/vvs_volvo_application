@@ -66,7 +66,8 @@ class VehicleDetectionService:
         self.display_duration = 60
 
 
-    async def process_video(self, input_source: str):
+   # Modify the process_video method to accept sio and sid
+    async def process_video(self, input_source: str,  sio=None, sid=None):
         if input_source.isdigit():
             cap = cv2.VideoCapture(int(input_source))
         elif os.path.exists(input_source):
@@ -77,10 +78,11 @@ class VehicleDetectionService:
         if not cap.isOpened():
             raise IOError("Could not open video source")
 
-        async for height in self.detect_and_track(cap):
-            pass
-
-        cap.release()
+        try:
+            async for height in self.detect_and_track(cap, sio, sid): 
+                pass
+        finally:
+            cap.release()
 
     async def process_video_with_socketio(self, input_source: str, sio, sid):
         cap = cv2.VideoCapture(input_source)
@@ -88,52 +90,33 @@ class VehicleDetectionService:
             raise IOError("Could not open video source")
 
         try:
-            async for height, vehicle_id in self.detect_and_track(cap):
-                vehicle_detail = {"vehicle_id": vehicle_id, "height": height}
-                await sio.emit('vehicle_data', vehicle_detail, to=sid)  # Emitting to the specific session
+            while cap.isOpened():
+                ret, frame = cap.read()
+                if not ret:
+                    break
+
+                frame = cv2.resize(frame, (1020, 500))
+                async for height, vehicle_id in self.detect_and_track_single_frame(frame, sio, sid):
+                    pass
         except Exception as e:
             await sio.emit('error', {'message': str(e)}, to=sid)
         finally:
             cap.release()
 
 
-    async def stream_video(self, input_source: str):
-        cap = cv2.VideoCapture(input_source)
-        if not cap.isOpened():
-            raise IOError("Could not open video source")
-
-        loop = asyncio.get_running_loop() 
-
+    async def detect_and_track(self, cap, sio=None, sid=None):
+        loop = asyncio.get_running_loop()
         while cap.isOpened():
             ret, frame = cap.read()
             if not ret:
                 break
 
             frame = cv2.resize(frame, (1020, 500))
-            async for _ in self.detect_and_track_single_frame(loop, frame):
-                pass  
-
-            self.draw_lines(frame)
-            self.display_vehicle_info(frame)
-            ret, buffer = cv2.imencode('.jpg', frame)
-            if ret:
-                yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
-
-        cap.release()
+            async for height, vehicle_id in self.detect_and_track_single_frame(loop, frame, sio, sid):
+                yield (height, vehicle_id)
 
 
-    async def detect_and_track(self, cap):
-        loop = asyncio.get_running_loop()  
-        while cap.isOpened():
-            ret, frame = cap.read()
-            if not ret:
-                break
-            
-            frame = cv2.resize(frame, (1020, 500))
-            async for height in self.detect_and_track_single_frame(loop, frame):  
-                yield height
-
-    async def detect_and_track_single_frame(self, loop, frame):
+    async def detect_and_track_single_frame(self, loop, frame, sio=None, sid=None):
         results = await loop.run_in_executor(None, self.detection_model.predict, frame)
         boxes = results[0].boxes.data.detach().cpu().numpy()
         detections = pd.DataFrame(boxes).astype("float")
@@ -149,7 +132,7 @@ class VehicleDetectionService:
                 seg_img = frame[y3:y4, x3:x4]
                 if seg_img.size != 0:
                     frame_path = os.path.join(self.detected_frames_dir, f'vehicle_{id}_measurement_frame.jpg')
-                    cv2.imwrite(frame_path, seg_img)  # Save the segmented image instead of the full frame
+                    cv2.imwrite(frame_path, seg_img) 
                     seg_img = cv2.resize(seg_img, None, fx=0.7, fy=0.7)
                     _, _, seg_contours, _ = await loop.run_in_executor(None, self.segmentation_model.detect, seg_img)
                     for seg in seg_contours:
@@ -162,10 +145,11 @@ class VehicleDetectionService:
                             new_height = VehicleDetail(vehicle_id=str(id), height=vertical_extent)
                             db.add(new_height)
                             db.commit()
+                            if sio is not None:
+                                await sio.emit('vehicle_data', {'vehicle_id': str(id), 'height': vertical_extent}, to=sid)
                         finally:
                             db.close()  
-
-                        yield (vertical_extent, id) 
+                        yield (vertical_extent, id)
 
 
 
