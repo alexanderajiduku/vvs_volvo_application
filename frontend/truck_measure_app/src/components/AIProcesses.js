@@ -3,7 +3,6 @@ import { Button, Typography, Paper, Box, Grid } from '@mui/material';
 import Detection from './Detection';
 import Segmentation from './Segmentation';
 import CameraList from './CameraList'; 
-import VideoWindow from './VideoWindow'; 
 
 /**
  * Renders the AIProcesses component.
@@ -43,9 +42,7 @@ const AIProcesses = () => {
           </Button>
         </Grid>
       </Grid>
-      <Box sx={{ marginTop: 2, marginBottom: 2 }}>
-        <VideoWindow />
-      </Box>
+ 
       {activeView === 'detection' && <Detection />}
       {activeView === 'segmentation' && <Segmentation />}
     </Box>

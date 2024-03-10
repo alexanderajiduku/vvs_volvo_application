@@ -13,7 +13,7 @@ import asyncio
 from app.shared.shared import height_queue
 
 class VehicleDetectionService:
-    def __init__(self, model_id: int, db_session: Session, output_dir: str = 'processed_videos', detected_frames_dir: str = 'detected_frames'):
+    def __init__(self, model_id: int, db_session: Session, output_dir: str = 'processed_videos', detected_frames_dir: str = 'detected_frames', sio=None, sid=None):
         model = db_session.query(Model).filter(Model.id == model_id).first()
         if model is None:
             raise ValueError(f"Model with ID {model_id} not found in the database")
@@ -56,7 +56,9 @@ class VehicleDetectionService:
         self.vehicle_process = {}
         self.vehicle_display_info = {}
         self.display_duration = 60
-
+        self.sio = sio
+        self.sid = sid
+        
 
     async def process_video(self, input_source: str):
         if input_source.isdigit():
@@ -65,70 +67,12 @@ class VehicleDetectionService:
             cap = cv2.VideoCapture(input_source)
         else:
             raise IOError("Invalid input source. Provide a valid video file path or webcam ID.")
-
         if not cap.isOpened():
             raise IOError("Could not open video source")
-
         async for height in self.detect_and_track(cap):
             pass
-
         cap.release()
-
-    # async def stream_video(self, input_source: str):
-    #     if input_source.isdigit():
-    #         cap = cv2.VideoCapture(int(input_source))
-    #     elif os.path.exists(input_source):
-    #         cap = cv2.VideoCapture(input_source)
-    #     else:
-    #         raise IOError("Invalid input source. Provide a valid video file path or webcam ID.")
-
-    #     if not cap.isOpened():
-    #         raise IOError("Could not open video source")
-
-    #     while cap.isOpened():
-    #         ret, frame = cap.read()
-    #         if not ret:
-    #             break
-
-    #         frame = cv2.resize(frame, (1020, 500))
-    #         self.draw_lines(frame)
-    #         self.display_vehicle_info(frame)
-    #         ret, buffer = cv2.imencode('.jpg', frame)
-    #         if ret:
-    #             yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
-    #         else:
-    #             break
-
-    #     cap.release()
         
-    async def stream_video(self, input_source: str):
-        cap = cv2.VideoCapture(input_source)
-        if not cap.isOpened():
-            raise IOError("Could not open video source")
-
-        loop = asyncio.get_running_loop()  # Get the current event loop
-
-        while cap.isOpened():
-            ret, frame = cap.read()
-            if not ret:
-                break
-
-            frame = cv2.resize(frame, (1020, 500))
-            
-            # Use an async for loop to consume values from the async generator
-            async for _ in self.detect_and_track_single_frame(loop, frame):
-                pass  # Here you could process each height value if needed
-
-            self.draw_lines(frame)
-            self.display_vehicle_info(frame)
-            ret, buffer = cv2.imencode('.jpg', frame)
-            if ret:
-                yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
-
-        cap.release()
-
-
-
 
     async def detect_and_track(self, cap):
         loop = asyncio.get_running_loop()  
@@ -140,6 +84,7 @@ class VehicleDetectionService:
             frame = cv2.resize(frame, (1020, 500))
             async for height in self.detect_and_track_single_frame(loop, frame):  
                 yield height
+
 
     async def detect_and_track_single_frame(self, loop, frame):
         results = await loop.run_in_executor(None, self.detection_model.predict, frame)
@@ -157,7 +102,7 @@ class VehicleDetectionService:
                 seg_img = frame[y3:y4, x3:x4]
                 if seg_img.size != 0:
                     frame_path = os.path.join(self.detected_frames_dir, f'vehicle_{id}_measurement_frame.jpg')
-                    cv2.imwrite(frame_path, frame)
+                    cv2.imwrite(frame_path, seg_img)
                     seg_img = cv2.resize(seg_img, None, fx=0.7, fy=0.7)
                     _, _, seg_contours, _ = await loop.run_in_executor(None, self.segmentation_model.detect, seg_img)
                     for seg in seg_contours:
@@ -165,12 +110,15 @@ class VehicleDetectionService:
                         min_y = np.min(y_coords)
                         max_y = np.max(y_coords)
                         vertical_extent = int(max_y - min_y)
-                        new_height = VehicleDetail(vehicle_id=str(id), height=vertical_extent)
-                        self.db_session.add(new_height)
+                        new_height = {'vehicle_id': id, 'height': vertical_extent}  # Modified here
+                        yield new_height
+                        new_vehicle_height = VehicleDetail(vehicle_id=str(id), height=vertical_extent)
+                        if self.sio and self.sid:
+                            await self.sio.emit('vehicle_height', new_height, to=self.sid)  # Emits data including vehicle_id
+                        self.db_session.add(new_vehicle_height)
                         self.db_session.commit()
-                        yield vertical_extent
 
-            self.db_session.commit()
+                        
 
     def draw_lines(self, frame: np.ndarray):
         cv2.line(frame, (self.red_line_x, 0), (self.red_line_x, frame.shape[0]), (0, 0, 255), 2)

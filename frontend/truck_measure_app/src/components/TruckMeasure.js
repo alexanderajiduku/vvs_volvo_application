@@ -1,17 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Container from '@mui/material/Container';
 import Grid from '@mui/material/Grid';
 import Typography from '@mui/material/Typography';
 import VideoUploadAndProcess from './VideoUploadAndProcess';
-import VideoFeed from './VideoFeed'; 
 
 const TruckMeasure = () => {
-    const [isActive, setIsActive] = useState(false); 
-    const [modelId, setModelId] = useState(''); 
+    const [isActive, setIsActive] = useState(false);
+    const [modelId, setModelId] = useState('');
+
+    useEffect(() => {
+        if (isActive) {
+            console.log('HeightMeasurementComponent is now active and listening for data');
+        }
+    }, [isActive]);
 
     const onVideoProcessingStart = (selectedModelId) => {
         setModelId(selectedModelId);
-        setIsActive(true); 
+        setIsActive(true);
     };
 
     return (
@@ -23,14 +28,10 @@ const TruckMeasure = () => {
                 <Grid item xs={12}>
                     <VideoUploadAndProcess onUploadSuccess={onVideoProcessingStart} />
                 </Grid>
-                {isActive && (
-                    <Grid item xs={12}>
-                    <VideoFeed isActive={isActive} modelId={modelId} />
-              </Grid>
-                )}
             </Grid>
         </Container>
     );
 };
 
 export default TruckMeasure;
+

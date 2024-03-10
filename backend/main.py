@@ -4,8 +4,7 @@ from app.database.database import get_db
 from api.v1.api import api_router  
 from app.core.cors import setup_cors
 from fastapi.staticfiles import StaticFiles
-# from sqlalchemy.orm import Session
-# from fastapi import Depends
+from socketio_config import sio, create_socketio_app
 
 
 def create_application() -> FastAPI:
@@ -21,6 +20,8 @@ def create_application() -> FastAPI:
 
 app = create_application()
 
+combined_app = create_socketio_app(app)
+
 
 @app.get("/")
 async def home():
@@ -30,4 +31,4 @@ async def home():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(combined_app, host="0.0.0.0", port=8000)
