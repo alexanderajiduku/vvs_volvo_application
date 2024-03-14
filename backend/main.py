@@ -1,11 +1,8 @@
 import logging.config
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware  # Import CORSMiddleware
-from app.database.database import get_db
 from api.v1.api import api_router
 from fastapi.staticfiles import StaticFiles
-import asyncio
-from app.services.vehicle_measure import VehicleDetectionService
 from app.shared.shared import frames_queue
 import os
 from asyncio import CancelledError
@@ -14,13 +11,12 @@ from asyncio import CancelledError
 def create_application() -> FastAPI:
     app = FastAPI()
 
-    # Configure CORS
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],  # Allows all origins
+        allow_origins=["*"], 
         allow_credentials=True,
-        allow_methods=["*"],  # Allows all methods
-        allow_headers=["*"],  # Allows all headers
+        allow_methods=["*"],  
+        allow_headers=["*"],  
     )
 
     app.include_router(api_router, prefix="/api/v1")

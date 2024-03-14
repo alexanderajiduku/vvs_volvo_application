@@ -3,43 +3,35 @@ import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
 
-const MeasurementDisplay = () => {
+const MeasurementDisplay = ({ isActive }) => {
   const [latestMeasurement, setLatestMeasurement] = useState('');
-  const connectWebSocket = () => {
-    const ws = new WebSocket('ws://localhost:8000/ws');
 
+  
+  useEffect(() => {
+    if (!isActive) return;
+    const ws = new WebSocket('ws://localhost:8000/ws');
     ws.onopen = () => {
       console.log('WebSocket Connected');
     };
-
     ws.onmessage = (event) => {
-      const message = event.data;
-      console.log('Message from server:', message);
-      setLatestMeasurement(message);
+      console.log('Received message:', event.data);
+      setLatestMeasurement(event.data);  
     };
-
     ws.onclose = (event) => {
       console.log('WebSocket disconnected', event.reason);
       if (!event.wasClean) {
         setTimeout(() => {
           console.log('Reconnecting WebSocket');
-          connectWebSocket();
-        }, 3000);
+        }, 1000);
       }
     };
-
     ws.onerror = (error) => {
       console.error('WebSocket Error', error);
     };
     return () => {
       ws.close();
     };
-  };
-
-  useEffect(() => {
-    const cleanup = connectWebSocket();
-    return cleanup;
-  }, []);
+  }, [isActive]); 
 
   return (
     <Card sx={{ maxWidth: 345, margin: 'auto', marginTop: 5 }}>
@@ -48,7 +40,7 @@ const MeasurementDisplay = () => {
           Latest Measurement
         </Typography>
         <Typography variant="h1" component="p" sx={{ fontWeight: 'bold' }}>
-          {latestMeasurement}
+          {latestMeasurement || 'Waiting for data...'} 
         </Typography>
       </CardContent>
     </Card>

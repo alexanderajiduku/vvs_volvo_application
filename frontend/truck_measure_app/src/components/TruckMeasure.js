@@ -6,12 +6,12 @@ import VideoUploadAndProcess from './VideoUploadAndProcess';
 import MeasurementsDisplay from './MeasurementDisplay';
 
 const TruckMeasure = () => {
-    const [isActive, setIsActive] = useState(false); 
-    const [modelId, setModelId] = useState(''); 
+    const [isActive, setIsActive] = useState(false);
+    const [modelId, setModelId] = useState('');
 
     const onVideoProcessingStart = (selectedModelId) => {
         setModelId(selectedModelId);
-        setIsActive(true); 
+        setIsActive(true);
     };
 
     return (
@@ -23,10 +23,10 @@ const TruckMeasure = () => {
                 <Grid item xs={12}>
                     <VideoUploadAndProcess onUploadSuccess={onVideoProcessingStart} />
                 </Grid>
-            </Grid>
-            <Grid item xs={12}>
-                    <MeasurementsDisplay />
+                <Grid item xs={12}>
+                    <MeasurementsDisplay isActive={isActive} />
                 </Grid>
+            </Grid>
         </Container>
     );
 };
