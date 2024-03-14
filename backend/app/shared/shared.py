@@ -1,3 +1,3 @@
 import asyncio
 
-height_queue = asyncio.Queue()
+frames_queue = asyncio.Queue()

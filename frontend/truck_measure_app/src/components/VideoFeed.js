@@ -1,43 +1,50 @@
-import React, { useState, useEffect } from 'react';
-import AuthApi from '../api/api'; // Assuming this is where you get your auth token
-import { BASE_URL } from '../config/config'; // Your API base URL
+import React, { useState, useEffect, useRef } from 'react';
+import { BASE_URL } from '../config/config'; // Your WebSocket base URL (if different from HTTP API)
 import { CircularProgress, Typography, Box } from '@mui/material';
 
-const VideoFeed = ({ isActive, modelId, inputSource }) => {
-  const [isLoading, setIsLoading] = useState(false);
+const VideoFeed = ({ isActive, modelId }) => {
+  const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
-  const [videoStream, setVideoStream] = useState(null);
+  const imageRef = useRef(null);
 
   useEffect(() => {
-    const fetchVideoStream = async () => {
-      if (!modelId || !isActive || !inputSource) {
-        return;
-      }
-      setIsLoading(true);
-      setIsError(false); 
-      try {
-        const authToken = AuthApi.getAuthToken(); 
-        const encodedInputSource = encodeURIComponent(inputSource);
-        const response = await fetch(`${BASE_URL}/stream-processed-video/${modelId}?input_source=${encodedInputSource}`, {
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
-        });
+    if (!isActive || !modelId) {
+      return;
+    }
 
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
+    let ws;
+
+    const connectWebSocket = () => {
+      ws = new WebSocket(`${BASE_URL.replace("http", "ws")}/ws?modelId=${modelId}`);
+
+      ws.onopen = () => {
+        console.log('WebSocket Connected');
+        setIsLoading(false);
+      };
+
+      ws.onmessage = (event) => {
+        if (imageRef.current) {
+          const blob = new Blob([event.data], { type: 'image/jpeg' });
+          imageRef.current.src = URL.createObjectURL(blob);
         }
-        setVideoStream(URL.createObjectURL(await response.blob()));
-      } catch (error) {
-        console.error('Error loading video feed:', error);
-        setIsError(true); 
-      } finally {
-        setIsLoading(false); 
-      }
+      };
+
+      ws.onerror = (error) => {
+        console.error('WebSocket Error:', error);
+        setIsError(true);
+      };
+
+      ws.onclose = () => console.log('WebSocket Disconnected');
     };
 
-    fetchVideoStream();
-  }, [isActive, modelId, inputSource]); 
+    connectWebSocket();
+
+    return () => {
+      if (ws) {
+        ws.close();
+      }
+    };
+  }, [isActive, modelId]);
 
   if (isLoading) {
     return (
@@ -60,9 +67,9 @@ const VideoFeed = ({ isActive, modelId, inputSource }) => {
       <Typography variant="h5" gutterBottom align="center">
         Live Video Feed
       </Typography>
-      {videoStream && (
-        <video src={videoStream} controls autoPlay style={{ width: '100%' }} alt="Live Video Feed" />
-      )}
+      <Box display="flex" justifyContent="center" alignItems="center">
+        <img ref={imageRef} alt="Live Video Feed" style={{ width: '100%' }} />
+      </Box>
     </Box>
   );
 };

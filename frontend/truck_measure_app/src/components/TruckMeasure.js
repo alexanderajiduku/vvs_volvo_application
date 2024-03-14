@@ -3,7 +3,7 @@ import Container from '@mui/material/Container';
 import Grid from '@mui/material/Grid';
 import Typography from '@mui/material/Typography';
 import VideoUploadAndProcess from './VideoUploadAndProcess';
-import VideoFeed from './VideoFeed'; 
+import MeasurementsDisplay from './MeasurementDisplay';
 
 const TruckMeasure = () => {
     const [isActive, setIsActive] = useState(false); 
@@ -23,12 +23,10 @@ const TruckMeasure = () => {
                 <Grid item xs={12}>
                     <VideoUploadAndProcess onUploadSuccess={onVideoProcessingStart} />
                 </Grid>
-                {isActive && (
-                    <Grid item xs={12}>
-                    <VideoFeed isActive={isActive} modelId={modelId} />
-              </Grid>
-                )}
             </Grid>
+            <Grid item xs={12}>
+                    <MeasurementsDisplay />
+                </Grid>
         </Container>
     );
 };
