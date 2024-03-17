@@ -6,6 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from app.shared.shared import frames_queue
 import os
 from asyncio import CancelledError
+import json
 
 
 def create_application() -> FastAPI:
@@ -43,7 +44,8 @@ async def websocket_endpoint(websocket: WebSocket):
         while True:
             try:
                 height = await frames_queue.get()
-                await websocket.send_text(f"{height}")
+                height_json = json.dumps({"height": height})
+                await websocket.send_text(height_json)
             except CancelledError:
                 logging.info("WebSocket task cancelled, exiting")
                 break
