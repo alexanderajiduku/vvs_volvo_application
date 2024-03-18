@@ -37,59 +37,18 @@ app = create_application()
 async def home():
     return {"message": "Welcome to the home page!"}
 
-# Getting error with websocket sending and closing prematurely
-
-# @app.websocket("/ws")
-# async def websocket_endpoint(websocket: WebSocket):
-#     await websocket.accept()
-#     logging.info("WebSocket client connected")
-
-#     async def heartbeat():
-#         while True:
-#             try:
-#                 await websocket.send_text(json.dumps({"type": "heartbeat"}))
-#                 await asyncio.sleep(10)  # Send heartbeat every 10 seconds
-#             except Exception as e:
-#                 logging.error(f"Heartbeat failed: {e}")
-#                 break
-
-#     heartbeat_task = asyncio.create_task(heartbeat())
-
-#     try:
-#         while True:
-#             try:
-#                 height = await frames_queue.get()
-#                 height_json = json.dumps({"height": height})
-#                 if websocket.client_state == WebSocketState.CONNECTED:
-#                     await websocket.send_text(height_json)
-#             except Exception as e:
-#                 logging.error(f"Error sending message: {e}")
-#             except CancelledError:
-#                 logging.info("WebSocket task cancelled, exiting")
-#                 break
-#     except WebSocketDisconnect:
-#         logging.info("WebSocket client disconnected")
-#     except Exception as e:
-#         logging.error(f"An error occurred: {e}")
-#     finally:
-#         heartbeat_task.cancel() 
-#         try:
-#             await websocket.close()
-#             logging.info("WebSocket connection gracefully closed")
-#         except Exception as e:
-#             logging.error(f"Error during WebSocket closure: {e}")
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     logging.info("WebSocket client connected")
-    connection_open = True  # Custom flag to track connection status
+    connection_open = True 
 
     async def heartbeat():
-        while connection_open:  # Use the flag to check connection status
+        while connection_open:  
             try:
                 await websocket.send_text(json.dumps({"type": "heartbeat"}))
-                await asyncio.sleep(10)  # Send heartbeat every 10 seconds
+                await asyncio.sleep(10) 
             except Exception as e:
                 logging.error(f"Heartbeat failed: {e}")
                 break

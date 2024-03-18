@@ -5,11 +5,18 @@ import { Card, Typography, CardContent } from '@mui/material';
 const MeasurementDisplay = () => {
   const [latestMeasurement, setLatestMeasurement] = useState(null);
   const ws = useRef(null);
+  const reconnectAttempts = useRef(0);
+  const maxReconnectAttempts = 5;
 
   useEffect(() => {
     const connectWebSocket = () => {
+      if (reconnectAttempts.current >= maxReconnectAttempts) {
+        console.log('Max reconnect attempts reached, not trying further.');
+        return;
+      }
       ws.current = new WebSocket('ws://localhost:8000/ws');
       ws.current.onopen = () => console.log('WebSocket Connected');
+      reconnectAttempts.current = 0;
       ws.current.onmessage = (event) => {
         console.log('Raw data:', event.data);
         try {
@@ -27,9 +34,9 @@ const MeasurementDisplay = () => {
 
       ws.current.onclose = (event) => {
         console.log('WebSocket disconnected', event.reason);
-        if (!event.wasClean) {
-          console.log('Attempting to reconnect WebSocket...');
+        if (!event.wasClean && reconnectAttempts.current < maxReconnectAttempts) {
           setTimeout(connectWebSocket, 2000);
+          reconnectAttempts.current++;
         }
       };
 

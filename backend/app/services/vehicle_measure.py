@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.models.model import Model
 from .yolo_segmentation import YOLOSegmentation  
 from app.models.vehicledetails import VehicleDetail
+from app.services.camera_handler import CameraHandler
 from ultralytics import YOLO  
 import asyncio
 from app.shared.shared import frames_queue
@@ -59,6 +60,7 @@ class VehicleDetectionService:
         self.vehicle_process = {}
         self.vehicle_display_info = {}
         self.display_duration = 60
+        self.is_running = True 
 
 
     async def process_video(self, input_source: str):
@@ -67,12 +69,30 @@ class VehicleDetectionService:
         elif os.path.exists(input_source):
             cap = cv2.VideoCapture(input_source)
         else:
-            raise IOError("Invalid input source. Provide a valid video file path or webcam ID.")
-        if not cap.isOpened():
+            camera_handler = CameraHandler(camera_id=int(input_source))
+            cap = camera_handler.get_camera_feed()
+
+        if not isinstance(cap, cv2.VideoCapture):
             raise IOError("Could not open video source")
+
         async for height in self.detect_and_track(cap):
             pass
-        cap.release()
+
+        while self.is_running: 
+            ret, frame = cap.read()
+            if not ret:
+                break
+        
+            async for height in self.detect_and_track(cap):
+                if not self.is_running:
+                    break
+
+        if isinstance(cap, cv2.VideoCapture):
+            cap.release()
+
+    def stop_processing(self):
+        self.is_running = False
+
 
     async def stream_video(self, input_source: str, frames_queue: Queue):
         cap = cv2.VideoCapture(input_source)
@@ -103,6 +123,15 @@ class VehicleDetectionService:
             frame = cv2.resize(frame, (1020, 500))
             async for height in self.detect_and_track_single_frame(loop, frame):  
                 yield height
+            self.draw_lines(frame)  
+            self.display_vehicle_info(frame)  
+
+            cv2.imshow('Vehicle Detection', frame)  
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+        if isinstance(cap, cv2.VideoCapture):
+            cap.release()
+        cv2.destroyAllWindows()  
 
     async def detect_and_track_single_frame(self, loop, frame):
         results = await loop.run_in_executor(None, self.detection_model.predict, frame)
@@ -111,7 +140,6 @@ class VehicleDetectionService:
 
         detected_cars = [row[:4].astype(int).tolist() for index, row in detections.iterrows() if self.class_list[int(row[5])] == 'car']
         bbox_id = await loop.run_in_executor(None, self.tracker.update, detected_cars)
-
         for bbox in bbox_id:
             x3, y3, x4, y4, id = bbox
             cx = int((x3 + x4) / 2)

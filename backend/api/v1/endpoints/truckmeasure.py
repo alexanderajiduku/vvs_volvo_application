@@ -27,6 +27,12 @@ async def process_truck_measure_endpoint(model_id: int, file: UploadFile = File(
     return {"message": "Video is being processed and heights are being saved."}
 
 
+@router.post("/process-truck-measure/{model_id}/{camera_id}")
+async def process_truck_measure_endpoint_camera(model_id: int, camera_id: int, db: Session = Depends(get_db)):
+    vehicle_detection_service = VehicleDetectionService(model_id, db, UPLOAD_DIR, UPLOAD_DIR)
+    await vehicle_detection_service.process_video(str(camera_id)) 
+    return {"message": f"Camera {camera_id} feed is being processed and heights are being saved."}
+
 
 @router.get("/stream-processed-video/{model_id}")
 async def stream_processed_video_endpoint(model_id: int, input_source: str = Query(...), db: Session = Depends(get_db)):
