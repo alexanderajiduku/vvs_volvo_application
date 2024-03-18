@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import Typography from '@mui/material/Typography';
+import { Card, Typography, CardContent } from '@mui/material';
+
 
 const MeasurementDisplay = () => {
   const [latestMeasurement, setLatestMeasurement] = useState(null);
@@ -10,14 +9,17 @@ const MeasurementDisplay = () => {
   useEffect(() => {
     const connectWebSocket = () => {
       ws.current = new WebSocket('ws://localhost:8000/ws');
-
       ws.current.onopen = () => console.log('WebSocket Connected');
-
       ws.current.onmessage = (event) => {
+        console.log('Raw data:', event.data);
         try {
           const data = JSON.parse(event.data);
-          console.log('Parsed height:', data.height); 
-          setLatestMeasurement(data.height); 
+          if (data.hasOwnProperty('height')) {
+            console.log('Parsed height:', data.height);
+            setLatestMeasurement(data.height);
+          } else {
+            console.log('Non-height message received:', data.type);
+          }
         } catch (error) {
           console.error('Error parsing JSON:', error);
         }
@@ -42,28 +44,34 @@ const MeasurementDisplay = () => {
     return () => {
       if (ws.current) {
         ws.current.close();
+        ws.current = null;
       }
     };
   }, []);
 
   return (
-    <Card sx={{ maxWidth: 345, margin: 'auto', marginTop: 5 }}>
-      <CardContent>
-        <Typography gutterBottom variant="h5" component="div">
-          Latest Measurement
-        </Typography>
-        <Typography variant="h1" component="p" sx={{ fontWeight: 'bold' }}>
-          {latestMeasurement !== null ? `Height: ${latestMeasurement}` : 'Waiting for data...'}
-        </Typography>
-      </CardContent>
+    <Card sx={{ 
+        maxWidth: 345, 
+        height: 200, 
+        margin: 'auto', 
+        marginTop: 5, 
+        bgcolor: 'black', 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+      }}>
+      <Typography 
+        variant="h1" 
+        component="div" 
+        sx={{ 
+          color: '#FFFFFF', 
+          fontWeight: 'bold',
+          textShadow: '2px 2px 8px rgba(0, 0, 0, 0.7)', 
+        }}>
+        {latestMeasurement !== null ? `${latestMeasurement}` : 'Waiting for data...'}
+      </Typography>
     </Card>
   );
 };
 
 export default MeasurementDisplay;
-
-
-
-
-
-

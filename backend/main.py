@@ -1,5 +1,6 @@
 import logging.config
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from starlette.websockets import WebSocketState
 from fastapi.middleware.cors import CORSMiddleware  # Import CORSMiddleware
 from api.v1.api import api_router
 from fastapi.staticfiles import StaticFiles
@@ -36,17 +37,33 @@ app = create_application()
 async def home():
     return {"message": "Welcome to the home page!"}
 
+# Getting error with websocket sending and closing prematurely
 
 # @app.websocket("/ws")
 # async def websocket_endpoint(websocket: WebSocket):
 #     await websocket.accept()
 #     logging.info("WebSocket client connected")
+
+#     async def heartbeat():
+#         while True:
+#             try:
+#                 await websocket.send_text(json.dumps({"type": "heartbeat"}))
+#                 await asyncio.sleep(10)  # Send heartbeat every 10 seconds
+#             except Exception as e:
+#                 logging.error(f"Heartbeat failed: {e}")
+#                 break
+
+#     heartbeat_task = asyncio.create_task(heartbeat())
+
 #     try:
 #         while True:
 #             try:
 #                 height = await frames_queue.get()
 #                 height_json = json.dumps({"height": height})
-#                 await websocket.send_text(height_json)
+#                 if websocket.client_state == WebSocketState.CONNECTED:
+#                     await websocket.send_text(height_json)
+#             except Exception as e:
+#                 logging.error(f"Error sending message: {e}")
 #             except CancelledError:
 #                 logging.info("WebSocket task cancelled, exiting")
 #                 break
@@ -55,36 +72,43 @@ async def home():
 #     except Exception as e:
 #         logging.error(f"An error occurred: {e}")
 #     finally:
-#         await websocket.close()
-#         logging.info("WebSocket connection closed")
+#         heartbeat_task.cancel() 
+#         try:
+#             await websocket.close()
+#             logging.info("WebSocket connection gracefully closed")
+#         except Exception as e:
+#             logging.error(f"Error during WebSocket closure: {e}")
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     logging.info("WebSocket client connected")
+    connection_open = True  # Custom flag to track connection status
 
     async def heartbeat():
-        while True:
+        while connection_open:  # Use the flag to check connection status
             try:
                 await websocket.send_text(json.dumps({"type": "heartbeat"}))
-                await asyncio.sleep(30)  # Send heartbeat every 30 seconds
+                await asyncio.sleep(10)  # Send heartbeat every 10 seconds
             except Exception as e:
                 logging.error(f"Heartbeat failed: {e}")
                 break
 
-    # Start the heartbeat task
     heartbeat_task = asyncio.create_task(heartbeat())
 
     try:
-        while True:
+        while connection_open:  # Use the flag to check connection status
             try:
                 height = await frames_queue.get()
                 height_json = json.dumps({"height": height})
                 await websocket.send_text(height_json)
+            except Exception as e:
+                logging.error(f"Error sending message: {e}")
             except CancelledError:
                 logging.info("WebSocket task cancelled, exiting")
                 break
     except WebSocketDisconnect:
+        connection_open = False  # Update the flag upon disconnection
         logging.info("WebSocket client disconnected")
     except Exception as e:
         logging.error(f"An error occurred: {e}")
