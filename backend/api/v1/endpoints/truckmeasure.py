@@ -12,6 +12,7 @@ router = APIRouter()
 
 UPLOAD_DIR = "truckmeasure_uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+current_vehicle_detection_service = None
 
 
 @router.post("/process-truck-measure/{model_id}")
@@ -29,9 +30,21 @@ async def process_truck_measure_endpoint(model_id: int, file: UploadFile = File(
 
 @router.post("/process-truck-measure/{model_id}/{camera_id}")
 async def process_truck_measure_endpoint_camera(model_id: int, camera_id: int, db: Session = Depends(get_db)):
+    global current_vehicle_detection_service
     vehicle_detection_service = VehicleDetectionService(model_id, db, UPLOAD_DIR, UPLOAD_DIR)
     await vehicle_detection_service.process_video(str(camera_id)) 
+    current_vehicle_detection_service = vehicle_detection_service
     return {"message": f"Camera {camera_id} feed is being processed and heights are being saved."}
+
+
+@router.post("/stop-camera")
+async def stop_camera_feed():
+    global current_vehicle_detection_service
+    if current_vehicle_detection_service is None:
+        raise HTTPException(status_code=404, detail="No active camera feed processing found")
+    current_vehicle_detection_service.stop_processing()
+    current_vehicle_detection_service = None  
+    return {"message": "Camera feed processing has been stopped."}
 
 
 @router.get("/stream-processed-video/{model_id}")

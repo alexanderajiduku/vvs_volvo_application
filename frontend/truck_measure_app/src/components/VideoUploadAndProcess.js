@@ -229,9 +229,25 @@ const VideoUploadAndProcess = ({ onUploadSuccess }) => {
         }
     };
 
+    const handleStopCamera = async () => {
+        try {
+            const response = await axios.post(`${BASE_URL}/api/v1/stop-camera`, {}, {
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+    
+            if (response.data) {
+                console.log(response.data.message);
+            }
+        } catch (error) {
+            console.error('Error stopping camera:', error);
+        }
+    };
+    
+
     const handleCameraIdChange = (e) => {
         const newValue = e.target.value;
-        // Allow only a single digit
         if (newValue === '' || /^[0-9]$/.test(newValue)) {
             setCameraId(newValue);
         }
@@ -275,9 +291,12 @@ const VideoUploadAndProcess = ({ onUploadSuccess }) => {
             <Button variant="contained" color="primary" onClick={handleUpload} disabled={!selectedFile || !modelId} sx={{ marginTop: 2, marginLeft: 2 }}>
                 Upload Video
             </Button>
-            <Button variant="contained" color="secondary" onClick={handleStartCamera} disabled={!modelId || !cameraId} sx={{ marginTop: 2, marginLeft: 20 }}>
+            <Button variant="contained" color="secondary" onClick={handleStartCamera} disabled={!modelId || !cameraId} sx={{ marginTop: 2, marginLeft: 15 }}>
                 Start Camera
             </Button>
+            <Button variant="contained" color="error" onClick={handleStopCamera} sx={{ marginTop: 2, marginLeft: 10 }}>
+                Stop Camera
+            </Button>   
         </div>
     );
 };
