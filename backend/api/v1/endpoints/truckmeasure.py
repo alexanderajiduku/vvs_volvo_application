@@ -63,6 +63,8 @@ async def stop_camera_feed(camera_id: int):
         logging.error(f"Error stopping camera feed for camera ID {camera_id}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to stop camera feed for camera ID {camera_id}")
 
+
+
 @router.get("/stream-processed-video/{model_id}")
 async def stream_processed_video_endpoint(model_id: int, input_source: str = Query(...), db: Session = Depends(get_db)):
     vehicle_detection_service = VehicleDetectionService(model_id=model_id, db_session=db, output_dir=UPLOAD_DIR, detected_frames_dir=UPLOAD_DIR)
