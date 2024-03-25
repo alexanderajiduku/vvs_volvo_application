@@ -10,6 +10,7 @@ from .yolo_segmentation import YOLOSegmentation
 from app.models.vehicledetails import VehicleDetail
 from app.services.camera_handler import CameraHandler
 from ultralytics import YOLO  
+from app.utils.camera_utils import active_camera_handlers
 import asyncio
 from app.shared.shared import frames_queue
 from asyncio import Queue
@@ -31,6 +32,8 @@ class VehicleDetectionService:
         self.tracker = Tracker()
         self.output_dir = output_dir
         self.detected_frames_dir = detected_frames_dir
+        self.camera_handler = None
+        
      
 
         if not os.path.exists(self.output_dir):
@@ -63,35 +66,39 @@ class VehicleDetectionService:
         self.is_running = True 
 
 
-    async def process_video(self, input_source: str):
-        if input_source.isdigit():
-            cap = cv2.VideoCapture(int(input_source))
-        elif os.path.exists(input_source):
-            cap = cv2.VideoCapture(input_source)
-        else:
-            camera_handler = CameraHandler(camera_id=int(input_source))
-            cap = camera_handler.get_camera_feed()
-
-        if not isinstance(cap, cv2.VideoCapture):
-            raise IOError("Could not open video source")
-
-        async for height in self.detect_and_track(cap):
-            pass
-
-        while self.is_running: 
-            ret, frame = cap.read()
-            if not ret:
-                break
         
-            async for height in self.detect_and_track(cap):
+    async def process_video(self, input_source: str):
+        cap = None
+
+        if input_source.isdigit():
+            self.camera_handler = CameraHandler(camera_id=int(input_source))
+        elif os.path.exists(input_source):
+            self.camera_handler = CameraHandler(camera_id=input_source)
+        else:
+            raise ValueError(f"Invalid input source: {input_source}")
+        self.camera_handler.start_camera()
+        cap = self.camera_handler.cap
+
+        if cap is None:
+            raise IOError("Could not open video source")
+        while self.is_running: 
+            frame = self.camera_handler.get_frame()
+            if frame is None:
+                break  
+
+            async for height in self.detect_and_track(frame):
                 if not self.is_running:
-                    break
+                    break  
+        self.stop_processing()
 
-        if isinstance(cap, cv2.VideoCapture):
-            cap.release()
-
-    def stop_processing(self):
+    def stop_processing(self, camera_id=None):
         self.is_running = False
+        if self.camera_handler:
+            self.camera_handler.stop_camera()
+            if camera_id and camera_id in active_camera_handlers:
+                del active_camera_handlers[camera_id]  
+
+
 
 
     async def stream_video(self, input_source: str, frames_queue: Queue):
@@ -112,26 +119,18 @@ class VehicleDetectionService:
             if ret:
                 await frames_queue.put(buffer.tobytes())
         cap.release()
-
-
-    async def detect_and_track(self, cap):
-        loop = asyncio.get_running_loop()  
-        while cap.isOpened():
-            ret, frame = cap.read()
-            if not ret:
-                break
-            frame = cv2.resize(frame, (1020, 500))
-            async for height in self.detect_and_track_single_frame(loop, frame):  
-                yield height
-            self.draw_lines(frame)  
-            self.display_vehicle_info(frame)  
-
-            cv2.imshow('Vehicle Detection', frame)  
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-        if isinstance(cap, cv2.VideoCapture):
-            cap.release()
-        cv2.destroyAllWindows()  
+ 
+        
+    async def detect_and_track(self, frame):
+        loop = asyncio.get_running_loop()
+        frame = cv2.resize(frame, (1020, 500))
+        async for height in self.detect_and_track_single_frame(loop, frame):  
+            yield height
+        self.draw_lines(frame)  
+        self.display_vehicle_info(frame)  
+        cv2.imshow('Vehicle Detection', frame)  
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            self.stop_processing() 
 
     async def detect_and_track_single_frame(self, loop, frame):
         results = await loop.run_in_executor(None, self.detection_model.predict, frame)

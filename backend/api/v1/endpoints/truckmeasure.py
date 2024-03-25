@@ -4,6 +4,9 @@ from sqlalchemy.orm import Session
 from app.database.database import get_db
 from app.services.vehicle_measure import VehicleDetectionService 
 from app.models.vehicledetails import VehicleDetail
+from app.utils.camera_utils import active_camera_handlers
+import logging
+from app.services.camera_handler import CameraHandler
 import os
 import shutil
 import uuid
@@ -12,8 +15,7 @@ router = APIRouter()
 
 UPLOAD_DIR = "truckmeasure_uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
-current_vehicle_detection_service = None
-
+global current_vehicle_detection_service
 
 @router.post("/process-truck-measure/{model_id}")
 async def process_truck_measure_endpoint(model_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
@@ -30,22 +32,36 @@ async def process_truck_measure_endpoint(model_id: int, file: UploadFile = File(
 
 @router.post("/process-truck-measure/{model_id}/{camera_id}")
 async def process_truck_measure_endpoint_camera(model_id: int, camera_id: int, db: Session = Depends(get_db)):
-    global current_vehicle_detection_service
+    logging.info(f"Starting camera with ID {camera_id}")
     vehicle_detection_service = VehicleDetectionService(model_id, db, UPLOAD_DIR, UPLOAD_DIR)
-    await vehicle_detection_service.process_video(str(camera_id)) 
-    current_vehicle_detection_service = vehicle_detection_service
+    await vehicle_detection_service.process_video(str(camera_id))
+    logging.info(f"Camera {camera_id} started successfully. Adding to active_camera_handlers.")
+    camera_handler = CameraHandler(camera_id=camera_id)
+    camera_handler.start_camera()
+    active_camera_handlers[str(camera_id)] = camera_handler
+    logging.info(f"CameraHandler for camera ID {camera_id} added to active_camera_handlers.")
+    logging.debug(f"Current active_camera_handlers: {list(active_camera_handlers.keys())}")
     return {"message": f"Camera {camera_id} feed is being processed and heights are being saved."}
 
 
-@router.post("/stop-camera")
-async def stop_camera_feed():
-    global current_vehicle_detection_service
-    if current_vehicle_detection_service is None:
-        raise HTTPException(status_code=404, detail="No active camera feed processing found")
-    current_vehicle_detection_service.stop_processing()
-    current_vehicle_detection_service = None  
-    return {"message": "Camera feed processing has been stopped."}
-
+@router.post("/stop-camera-feed/{camera_id}")
+async def stop_camera_feed(camera_id: int):
+    try:
+        logging.debug(f"Attempting to stop camera with ID: {camera_id}")
+        logging.debug(f"Current active_camera_handlers: {list(active_camera_handlers.keys())}")
+        camera_id_str = str(camera_id)  
+        camera_handler = active_camera_handlers.get(camera_id_str)
+        if not camera_handler:
+            logging.warning(f"No active camera handler found for ID: {camera_id}")
+            raise ValueError(f"No active camera found for camera ID {camera_id}")
+        camera_handler.stop_camera()
+        del active_camera_handlers[camera_id_str]
+        logging.info(f"Camera feed for camera ID {camera_id} has been stopped.")
+        logging.debug(f"Current active_camera_handlers after removal: {list(active_camera_handlers.keys())}")
+        return {"message": f"Camera feed for camera ID {camera_id} has been stopped."}
+    except Exception as e:
+        logging.error(f"Error stopping camera feed for camera ID {camera_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to stop camera feed for camera ID {camera_id}")
 
 @router.get("/stream-processed-video/{model_id}")
 async def stream_processed_video_endpoint(model_id: int, input_source: str = Query(...), db: Session = Depends(get_db)):

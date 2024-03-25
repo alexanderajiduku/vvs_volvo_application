@@ -12,45 +12,49 @@ class CameraHandler:
         self.output_path = output_path
         self.frame_width = frame_width
         self.frame_height = frame_height
- 
-    def get_camera_feed(self):
+        self.cap = None 
+
+    def start_camera(self):
         try:
             with VmbSystem.get_instance() as vimba:
                 cameras = vimba.get_all_cameras()
-                if not cameras:
-                    logging.info('No Allied Vision cameras found, trying default camera')
-                    raise EnvironmentError('No Allied Vision cameras available')
- 
-                selected_camera = cameras[self.camera_id]
-                if selected_camera.get_pixel_format() != PixelFormat.Mono8:
-                    try:
-                        selected_camera.set_pixel_format(PixelFormat.Bgr8)
-                    except Exception as e:
-                        logging.error(f"Error setting pixel format: {e}")
-                        return
- 
-                while True:
-                    frame = selected_camera.get_frame()
-                    try:
-                        yield frame.as_opencv_image()
-                    except ValueError as e:
-                        logging.error(f"Error converting frame: {e}")
-                        return
- 
+                if not cameras or self.camera_id >= len(cameras):
+                    raise EnvironmentError('No suitable Allied Vision camera found.')
+                camera = cameras[self.camera_id]
+                camera.open()
+                if camera.PixelFormat.get() != PixelFormat.Mono8:
+                    camera.PixelFormat.set(PixelFormat.Bgr8)
+                self.cap = camera
+
         except Exception as e:
-            logging.error(f"Switching to default camera due to an error: {e}")
-            cap = cv2.VideoCapture(self.camera_id, cv2.CAP_DSHOW)
- 
-            if not cap.isOpened():
-                logging.error('Cannot open default camera')
-                return
- 
-            while True:
-                ret, frame = cap.read()
-                if not ret:
-                    logging.error("Can't receive frame (stream end?). Exiting ...")
-                    break
- 
-                yield frame
- 
-            cap.release()
+            logging.info(f'Falling back to default camera due to an error or no Allied Vision camera available: {e}')
+            self.cap = cv2.VideoCapture(self.camera_id)
+
+            if not self.cap.isOpened():
+                logging.error('Cannot open the default camera')
+                raise IOError('Cannot open the default camera')
+
+    def get_frame(self):
+        if isinstance(self.cap, cv2.VideoCapture):
+            ret, frame = self.cap.read()
+            if ret:
+                return frame
+            else:
+                logging.error("Can't receive frame (stream end?). Exiting ...")
+                return None
+        else:
+            frame = self.cap.get_frame()  
+            try:
+                return frame.as_opencv_image()  
+            except ValueError as e:
+                logging.error(f"Error converting frame: {e}")
+                return None
+
+    def stop_camera(self):
+        if self.cap:
+            if isinstance(self.cap, cv2.VideoCapture):
+                self.cap.release()
+            else:
+                self.cap.close()
+
+            logging.info("Camera feed has been stopped.")

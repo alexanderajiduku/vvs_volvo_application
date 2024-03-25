@@ -8,5 +8,5 @@ class UploadImageResponse(BaseModel):
     file_path: str
     camera_id: Optional[int]
 
-class Config:
+    class Config:
         orm_mode = True  

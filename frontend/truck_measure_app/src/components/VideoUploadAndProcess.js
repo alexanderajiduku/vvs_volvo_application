@@ -231,7 +231,7 @@ const VideoUploadAndProcess = ({ onUploadSuccess }) => {
 
     const handleStopCamera = async () => {
         try {
-            const response = await axios.post(`${BASE_URL}/api/v1/stop-camera`, {}, {
+            const response = await axios.post(`${BASE_URL}/api/v1/stop-camera-feed/${cameraId}`, {}, {
                 headers: {
                     'Content-Type': 'application/json',
                 },
