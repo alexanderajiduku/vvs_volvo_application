@@ -11,6 +11,8 @@ import { UserProvider } from "./auth/UserContext";
 import { ThemeProvider } from '@mui/material/styles';
 import theme from './theme';
 import CssBaseline from '@mui/material/CssBaseline';
+import './components/BackgroundAnimation.js'
+import BackgroundAnimation from "./components/BackgroundAnimation.js";
 
 export const TOKEN_STORAGE_ID = "Authtoken";
 
@@ -83,6 +85,7 @@ const App = () => {
             <div className="wallpaper">
               <Navigation logout={logout} />
               <RoutesNav signin={signin} signup={signup} />
+              <BackgroundAnimation />
             </div>
           </UserProvider>
         </BrowserRouter>

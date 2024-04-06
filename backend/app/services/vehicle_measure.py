@@ -14,6 +14,7 @@ from app.utils.camera_utils import active_camera_handlers
 import asyncio
 from app.shared.shared import frames_queue
 from asyncio import Queue
+from typing import AsyncGenerator
 import logging
 
 
@@ -34,8 +35,7 @@ class VehicleDetectionService:
         self.detected_frames_dir = detected_frames_dir
         self.camera_handler = None
         
-     
-
+    
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
         if not os.path.exists(self.detected_frames_dir):
@@ -69,7 +69,6 @@ class VehicleDetectionService:
         
     async def process_video(self, input_source: str):
         cap = None
-
         if input_source.isdigit():
             self.camera_handler = CameraHandler(camera_id=int(input_source))
         elif os.path.exists(input_source):
@@ -78,18 +77,21 @@ class VehicleDetectionService:
             raise ValueError(f"Invalid input source: {input_source}")
         self.camera_handler.start_camera()
         cap = self.camera_handler.cap
-
         if cap is None:
             raise IOError("Could not open video source")
-        while self.is_running: 
-            frame = self.camera_handler.get_frame()
-            if frame is None:
-                break  
+        try:
+            while self.is_running:
+                frame = self.camera_handler.get_frame()
+                if frame is None:
+                    break
 
-            async for height in self.detect_and_track(frame):
-                if not self.is_running:
-                    break  
-        self.stop_processing()
+                async for height in self.detect_and_track(frame):
+                    if not self.is_running:
+                        break
+        finally:
+            if cap:
+                cap.release()
+            self.stop_processing()
 
     def stop_processing(self, camera_id=None):
         self.is_running = False
@@ -97,6 +99,7 @@ class VehicleDetectionService:
             self.camera_handler.stop_camera()
             if camera_id and camera_id in active_camera_handlers:
                 del active_camera_handlers[camera_id]  
+
 
 
 
@@ -121,9 +124,9 @@ class VehicleDetectionService:
         cap.release()
  
         
-    async def detect_and_track(self, frame):
+    async def detect_and_track(self, frame) -> AsyncGenerator[int, None]:
         loop = asyncio.get_running_loop()
-        frame = cv2.resize(frame, (1020, 500))
+        frame = cv2.resize(frame, (900, 700))
         async for height in self.detect_and_track_single_frame(loop, frame):  
             yield height
         self.draw_lines(frame)  
@@ -137,7 +140,7 @@ class VehicleDetectionService:
         boxes = results[0].boxes.data.detach().cpu().numpy()
         detections = pd.DataFrame(boxes).astype("float")
 
-        detected_cars = [row[:4].astype(int).tolist() for index, row in detections.iterrows() if self.class_list[int(row[5])] == 'car']
+        detected_cars = [row[:4].astype(int).tolist() for index, row in detections.iterrows() if self.class_list[int(row[5])] == 'Trucks']
         bbox_id = await loop.run_in_executor(None, self.tracker.update, detected_cars)
         for bbox in bbox_id:
             x3, y3, x4, y4, id = bbox

@@ -7,12 +7,13 @@ import logging
 from vmbpy import VmbSystem, PixelFormat
 
 class CameraHandler:
-    def __init__(self, camera_id=0, output_path='output.avi', frame_width=1280, frame_height=720):
+    def __init__(self, camera_id=1, output_path='output.avi', frame_width=1280, frame_height=720):
         self.camera_id = camera_id
         self.output_path = output_path
         self.frame_width = frame_width
         self.frame_height = frame_height
         self.cap = None 
+        
 
     def start_camera(self):
         try:
