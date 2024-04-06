@@ -2,9 +2,7 @@ import cv2
 import logging
 from vmbpy import VmbSystem, PixelFormat
  
-import cv2
-import logging
-from vmbpy import VmbSystem, PixelFormat
+
 
 class CameraHandler:
     def __init__(self, camera_id=1, output_path='output.avi', frame_width=1280, frame_height=720):

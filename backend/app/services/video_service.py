@@ -4,23 +4,7 @@ import sys
 from threading import Thread
 
 class VideoService:
-    """
-    A class that represents a video service.
-
-    Attributes:
-        camera_id (int): The ID of the camera.
-        cap (cv2.VideoCapture): The video capture object.
-        ret (bool): Flag indicating if a frame was successfully read.
-        frame (numpy.ndarray): The current frame of the video.
-        thread (Thread): The thread used for updating the video frames.
-
-    Methods:
-        __init__(self, camera_id: int): Initializes the VideoService object.
-        update(self): Continuously updates the video frames.
-        stream_video(self, *args): Streams the video frames as JPEG images.
-        signal_handler(sig, frame): Handles the signal when Ctrl+C is pressed.
-        display_video(self): Displays the video frames in a window.
-    """
+ 
     def __init__(self, camera_id: int):
         self.camera_id = camera_id
         self.cap = cv2.VideoCapture(camera_id)

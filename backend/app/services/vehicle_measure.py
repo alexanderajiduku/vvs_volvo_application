@@ -1,3 +1,4 @@
+
 import cv2
 import numpy as np
 import pandas as pd
@@ -181,3 +182,5 @@ class VehicleDetectionService:
                 info['display_frame_count'] -= 1
             else:
                 del self.vehicle_display_info[obj_id]
+
+                

@@ -1,0 +1,189 @@
+import cv2
+import numpy as np
+import pandas as pd
+import os 
+from sqlalchemy.orm import Session
+from app.models.model import Model
+from .yolo_segmentation import YOLOSegmentation  
+from app.models.vehicledetails import VehicleDetail
+from app.services.camera_handler import CameraHandler
+from .preprocessing import preprocess_frame_func
+from app.utils.camera_utils import active_camera_handlers
+from app.shared.shared import frames_queue
+from typing import AsyncGenerator
+import asyncio
+import logging
+
+class DetectionHandler:
+    def __init__(self, model_id, db_session: Session, roi_settings, snapped_folder, confidence_threshold, capture_range, output_dir: str = 'processed_videos', detected_frames_dir: str = 'detected_frames'):
+        model = db_session.query(Model).filter(Model.id == model_id).first()
+        if model is None:
+            raise ValueError(f"Model with ID {model_id} not found in the database")
+        model_path = os.path.join('uploaded_models', model.filename)  
+        if not os.path.exists(model_path):
+            raise FileNotFoundError(f"YOLO model file not found at {model_path}")
+        
+        self.db_session = db_session
+        self.segmentation_model = YOLOSegmentation(model_path)
+        self.roi_settings = roi_settings 
+        self.snapped_folder = snapped_folder  
+        self.confidence_threshold = confidence_threshold  
+        self.capture_range = capture_range  
+        self.crossed_ids = []  
+        self.camera_handler = None 
+        self.output_dir = output_dir  
+        self.detected_frames_dir = detected_frames_dir 
+        self.capture_range = 10
+        self.is_running = True
+        self.vehicle_process = {}
+        self.vehicle_display_info = {}
+        self.display_duration = 60
+
+        
+        if not os.path.exists(self.output_dir):
+                os.makedirs(self.output_dir)
+        if not os.path.exists(self.detected_frames_dir):
+            os.makedirs(self.detected_frames_dir)
+        
+
+    async def process_video(self, input_source: str):
+        if input_source.isdigit():
+            self.camera_handler = CameraHandler(camera_id=int(input_source))
+        elif os.path.exists(input_source):
+            self.camera_handler = CameraHandler(camera_id=input_source)
+        else:
+            raise ValueError(f"Invalid input source: {input_source}")
+        self.camera_handler.start_camera()
+
+        try:
+            while self.is_running:
+                frame = self.camera_handler.get_frame()
+                if frame is None:
+                    break
+
+                preprocessed_frame, _, _ = await asyncio.get_running_loop().run_in_executor(None, preprocess_frame_func, frame)
+                async for height in self.process_frame(frame, preprocessed_frame):
+                    pass
+                
+                cv2.imshow('Vehicle Detection', frame)
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    self.stop_processing()
+                    break
+        finally:
+            self.camera_handler.stop_camera()
+
+
+    async def detect_and_track(self, frame) -> AsyncGenerator[int, None]:
+        loop = asyncio.get_running_loop()
+        frame = cv2.resize(frame, (900, 700))
+        preprocessed_frame = await loop.run_in_executor(None, preprocess_frame_func, frame)
+        startX, startY, endX, endY, center_coords = self._calculate_roi(frame)
+        cv2.rectangle(frame, (startX, startY), (endX, endY), (0, 255, 255), 2)
+        cv2.line(frame, center_coords[0], center_coords[1], (0, 255, 255), 2)
+        async for height in self.process_frame(frame, preprocessed_frame):
+            self.display_vehicle_info(frame)  
+            cv2.imshow('Vehicle Detection', frame)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                self.stop_processing()
+            yield height 
+        await self.process_frame(frame, preprocessed_frame)
+        self.display_vehicle_info(frame)
+        cv2.imshow('Vehicle Detection', frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            self.stop_processing()
+
+
+    def stop_processing(self, camera_id=None):
+        self.is_running = False
+        if self.camera_handler:
+            self.camera_handler.stop_camera()
+            if camera_id and camera_id in active_camera_handlers:
+                del active_camera_handlers[camera_id]
+
+    async def process_frame(self, frame, preprocessed_frame):
+        startX, startY, endX, endY, center_x = self._calculate_roi(frame)
+        cv2.rectangle(frame, (startX, startY), (endX, endY), (0, 255, 255), 2)
+        line_start_point = (center_x, 0)
+        line_end_point = (center_x, frame.shape[0])
+        cv2.line(frame, line_start_point, line_end_point, (0, 255, 255), 2)
+
+
+        async for height in self._process_detections(frame, preprocessed_frame, startX, startY, endX, endY, center_x):
+            yield height
+
+    async def _process_detections(self, frame, preprocessed_frame, startX, startY, endX, endY, center_x):
+        _, _, seg_contours, scores = self.segmentation_model.detect(preprocessed_frame)
+        for seg, score in zip(seg_contours, scores):
+            if score > self.confidence_threshold:
+                x, y, w, h = cv2.boundingRect(seg)
+                if startX <= x <= endX and startY <= y <= endY:
+                    cv2.drawContours(frame, [seg], -1, (0, 255, 0), 2)
+                    cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
+                    self._check_and_save_snapshot(frame, seg, x, y, w, center_x)
+                    async for height in self._annotate_and_save(frame, seg, score, x, y, w, center_x):
+                        yield height
+    
+    async def _check_and_save_snapshot(self, frame, seg, x, y, w, center_coords):
+        cx = x + w // 2
+        center_x, _ = center_coords
+        if center_x - self.capture_range <= cx <= center_x + self.capture_range:
+            obj_id = hash(tuple(seg.flatten())) % 1e6
+            if obj_id not in self.crossed_ids:
+                self.crossed_ids.append(obj_id)
+                truck_height_pixels = np.max(seg[:, 1]) - np.min(seg[:, 1])
+                truck_width_pixels = w
+                truck_height_cm = int(truck_height_pixels / 1.65)
+                truck_width_cm = int(truck_width_pixels / 1.65)
+                await self._save_snapshot_and_record(frame, obj_id, truck_height_cm, truck_width_cm)
+
+
+    async def _annotate_and_save(self, frame, seg, score, x, y, w, center_x):
+        cx = x + w // 2  
+        obj_id = hash(tuple(seg.flatten())) % 1e6 
+        if center_x - self.capture_range <= cx <= center_x + self.capture_range and obj_id not in self.crossed_ids:
+            self.crossed_ids.append(obj_id)  
+            truck_height_pixels = np.max(seg[:, 1]) - np.min(seg[:, 1])
+            truck_height_cm = int(truck_height_pixels / 1.65)
+            new_height = VehicleDetail(vehicle_id=str(obj_id), height=truck_height_cm)
+            self.db_session.add(new_height)
+            self.db_session.commit()
+            await frames_queue.put(truck_height_cm)
+            logging.info(f"Height measurement {truck_height_cm} for vehicle {obj_id} added to queue")
+            info_text = f"Score: {score:.2f}, H: {truck_height_cm} cm"
+            cv2.putText(frame, info_text, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+            yield truck_height_cm
+
+
+
+    def _calculate_roi(self, frame):
+        frame_height, frame_width = frame.shape[:2]
+        center_x, center_y = frame_width // 2, frame_height // 2
+        roi_width, roi_height = self.roi_settings['width'], self.roi_settings['height']
+        offset = 0
+        startX = max(0, center_x - roi_width // 2 + offset)
+        startY = max(0, center_y - roi_height - 50)
+        endX = min(frame_width, startX + roi_width)
+        endY = min(frame_height, startY + roi_height)
+        return startX, startY, endX, endY, center_x
+
+    async def _save_snapshot_and_record(self, frame, obj_id, height_cm, width_cm):
+        snapshot_filename = os.path.join(self.snapped_folder, f'snapshot_{int(obj_id)}.jpg')
+        cv2.imwrite(snapshot_filename, frame)
+        new_vehicle = VehicleDetail(height=height_cm, width=width_cm)
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(None, self.db_session.add, new_vehicle)
+        await loop.run_in_executor(None, self.db_session.commit)
+
+
+    def display_vehicle_info(self, frame: np.ndarray):
+        completed_vehicles = len(self.vehicle_process)
+        cv2.putText(frame, f'Completed Vehicles: {completed_vehicles}', (10, 35), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+
+        for obj_id, info in list(self.vehicle_display_info.items()):
+            if info['display_frame_count'] > 0:
+                cv2.putText(frame, f'ID {obj_id}: Height {info["vertical_extent"]}', info['position'], cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+                info['display_frame_count'] -= 1
+            else:
+                del self.vehicle_display_info[obj_id]
+
+    

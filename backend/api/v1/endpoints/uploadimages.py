@@ -24,21 +24,7 @@ os.makedirs(UPLOADS_DIR, exist_ok=True)
 
 @router.post("/uploadimages/{camera_id}", response_model=UploadImageResponse)
 async def upload_image(camera_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
-    """
-    Uploads an image file for a specific camera.
 
-    Parameters:
-    - camera_id (int): The ID of the camera.
-    - file (UploadFile): The image file to be uploaded.
-    - db (Session): The database session.
-
-    Returns:
-    - dict: A dictionary containing the uploaded file details, including filename, content type, and file path.
-
-    Raises:
-    - HTTPException: If the camera is not found or if there is an error during the database transaction.
-    - HTTPException: If there is an error uploading the file.
-    """
     try:
         camera = db.query(Camera).filter_by(id=camera_id).first()
         if not camera:
