@@ -1,77 +1,82 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { BASE_URL } from '../config/config'; // Your WebSocket base URL (if different from HTTP API)
-import { CircularProgress, Typography, Box } from '@mui/material';
+import { CircularProgress, Typography, Box, Paper } from '@mui/material';
 
-const VideoFeed = ({ isActive, modelId }) => {
+const VideoStream = () => {
+  const [imageSrc, setImageSrc] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [isError, setIsError] = useState(false);
-  const imageRef = useRef(null);
+  const [error, setError] = useState(false); 
+  const reconnectAttempts = useRef(0);
+  const reconnectDelay = useRef(1000); 
 
   useEffect(() => {
-    if (!isActive || !modelId) {
-      return;
-    }
-
-    let ws;
-
     const connectWebSocket = () => {
-      ws = new WebSocket(`${BASE_URL.replace("http", "ws")}/ws?modelId=${modelId}`);
+      const ws = new WebSocket(`ws://localhost:8000/ws/video`);
 
       ws.onopen = () => {
-        console.log('WebSocket Connected');
-        setIsLoading(false);
+        setIsLoading(true);
+        setError(false); 
+        reconnectAttempts.current = 0;
+        reconnectDelay.current = 1000; 
       };
 
       ws.onmessage = (event) => {
-        if (imageRef.current) {
-          const blob = new Blob([event.data], { type: 'image/jpeg' });
-          imageRef.current.src = URL.createObjectURL(blob);
+        const blob = new Blob([event.data], { type: 'image/jpeg' });
+        const url = URL.createObjectURL(blob);
+        setImageSrc((prevSrc) => {
+          URL.revokeObjectURL(prevSrc); 
+          return url; 
+        });
+        setIsLoading(false);
+      };
+
+      ws.onerror = () => {
+        setIsLoading(false);
+        setError(true);
+        ws.close();
+      };
+
+      ws.onclose = () => {
+        if (!error) { 
+          setTimeout(connectWebSocket, reconnectDelay.current);
+          reconnectAttempts.current++;
+          reconnectDelay.current *= 2; 
         }
       };
 
-      ws.onerror = (error) => {
-        console.error('WebSocket Error:', error);
-        setIsError(true);
-      };
-
-      ws.onclose = () => console.log('WebSocket Disconnected');
-    };
-
-    connectWebSocket();
-
-    return () => {
-      if (ws) {
+      return () => {
         ws.close();
-      }
+      };
     };
-  }, [isActive, modelId]);
 
-  if (isLoading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center">
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  if (isError) {
-    return (
-      <Typography variant="body1" color="error" align="center">
-        Error loading video feed. Please try again later.
-      </Typography>
-    );
-  }
+    const cleanup = connectWebSocket();
+    return cleanup;
+  }, [error]); 
 
   return (
-    <Box>
-      <Typography variant="h5" gutterBottom align="center">
-        Live Video Feed
-      </Typography>
-      <Box display="flex" justifyContent="center" alignItems="center">
-        <img ref={imageRef} alt="Live Video Feed" style={{ width: '100%' }} />
-      </Box>
+    <Box display="flex" flexDirection="column" alignItems="center" p={2}>
+      {isLoading ? (
+        <Box display="flex" flexDirection="column" alignItems="center">
+          <CircularProgress />
+          <Typography variant="subtitle1" mt={2}>
+            {error ? "Error loading video stream. Attempting to reconnect..." : "Loading video stream..."}
+          </Typography>
+        </Box>
+      ) : imageSrc && !error ? (
+        <Paper elevation={4}>
+          <img
+            id="frame"
+            src={imageSrc}
+            alt="Live Stream"
+            style={{ maxWidth: '100%', maxHeight: '90vh' }}
+          />
+        </Paper>
+      ) : (
+        <Typography variant="subtitle1">
+          Unable to load video stream.
+        </Typography>
+      )}
     </Box>
   );
 };
 
-export default VideoFeed;
+export default VideoStream;

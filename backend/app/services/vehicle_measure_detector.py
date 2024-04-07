@@ -11,6 +11,7 @@ from .preprocessing import preprocess_frame_func
 from app.utils.camera_utils import active_camera_handlers
 from app.shared.shared import frames_queue
 from typing import AsyncGenerator
+from fastapi import WebSocket
 import asyncio
 import logging
 
@@ -38,6 +39,9 @@ class DetectionHandler:
         self.vehicle_process = {}
         self.vehicle_display_info = {}
         self.display_duration = 60
+    
+
+
 
         
         if not os.path.exists(self.output_dir):
@@ -46,13 +50,43 @@ class DetectionHandler:
             os.makedirs(self.detected_frames_dir)
         
 
-    async def process_video(self, input_source: str):
+    # async def process_video(self, input_source: str):
+    #     if input_source.isdigit():
+    #         self.camera_handler = CameraHandler(camera_id=int(input_source))
+    #     elif os.path.exists(input_source):
+    #         self.camera_handler = CameraHandler(camera_id=input_source)
+    #     else:
+    #         raise ValueError(f"Invalid input source: {input_source}")
+    #     self.camera_handler.start_camera()
+
+    #     try:
+    #         while self.is_running:
+    #             frame = self.camera_handler.get_frame()
+    #             if frame is None:
+    #                 break
+
+    #             preprocessed_frame, _, _ = await asyncio.get_running_loop().run_in_executor(None, preprocess_frame_func, frame)
+    #             async for height in self.process_frame(frame, preprocessed_frame):
+    #                 pass
+                
+    #             cv2.imshow('Vehicle Detection', frame)
+    #             if cv2.waitKey(1) & 0xFF == ord('q'):
+    #                 self.stop_processing()
+    #                 break
+    #     finally:
+    #         self.camera_handler.stop_camera()
+
+
+
+
+    async def process_video(self, input_source: str, websocket: WebSocket):
         if input_source.isdigit():
             self.camera_handler = CameraHandler(camera_id=int(input_source))
         elif os.path.exists(input_source):
             self.camera_handler = CameraHandler(camera_id=input_source)
         else:
             raise ValueError(f"Invalid input source: {input_source}")
+        
         self.camera_handler.start_camera()
 
         try:
@@ -60,15 +94,14 @@ class DetectionHandler:
                 frame = self.camera_handler.get_frame()
                 if frame is None:
                     break
+                processed_frame = await self.process_frame(frame)
+                ret, jpeg = cv2.imencode('.jpg', processed_frame)
+                if ret:
+                    await websocket.send_bytes(jpeg.tobytes())
+                else:
+                    logging.error("Failed to encode frame")
 
-                preprocessed_frame, _, _ = await asyncio.get_running_loop().run_in_executor(None, preprocess_frame_func, frame)
-                async for height in self.process_frame(frame, preprocessed_frame):
-                    pass
-                
-                cv2.imshow('Vehicle Detection', frame)
-                if cv2.waitKey(1) & 0xFF == ord('q'):
-                    self.stop_processing()
-                    break
+                await asyncio.sleep(0.03)
         finally:
             self.camera_handler.stop_camera()
 
@@ -99,6 +132,7 @@ class DetectionHandler:
             self.camera_handler.stop_camera()
             if camera_id and camera_id in active_camera_handlers:
                 del active_camera_handlers[camera_id]
+                
 
     async def process_frame(self, frame, preprocessed_frame):
         startX, startY, endX, endY, center_x = self._calculate_roi(frame)
@@ -106,8 +140,6 @@ class DetectionHandler:
         line_start_point = (center_x, 0)
         line_end_point = (center_x, frame.shape[0])
         cv2.line(frame, line_start_point, line_end_point, (0, 255, 255), 2)
-
-
         async for height in self._process_detections(frame, preprocessed_frame, startX, startY, endX, endY, center_x):
             yield height
 
@@ -152,7 +184,6 @@ class DetectionHandler:
             info_text = f"Score: {score:.2f}, H: {truck_height_cm} cm"
             cv2.putText(frame, info_text, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
             yield truck_height_cm
-
 
 
     def _calculate_roi(self, frame):

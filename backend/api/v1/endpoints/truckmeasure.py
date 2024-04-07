@@ -62,6 +62,9 @@ async def process_truck_measure_endpoint_camera(model_id: int, camera_id: int, d
     )
     await vehicle_detection_service.process_video(str(camera_id))
     logging.info(f"Camera {camera_id} started successfully. Adding to active_camera_handlers.")
+    if CameraHandler.is_active():
+        CameraHandler.get_instance().stop_camera()
+        logging.info("Previous camera stopped to start a new one.")
     camera_handler = CameraHandler(camera_id=camera_id)
     camera_handler.start_camera()
     active_camera_handlers[str(camera_id)] = camera_handler
@@ -71,22 +74,31 @@ async def process_truck_measure_endpoint_camera(model_id: int, camera_id: int, d
 
 
 @router.post("/stop-camera-feed/{camera_id}")
-async def stop_camera_feed(camera_id: int):
+async def stop_camera_feed(model_id: int, camera_id: int, db: Session = Depends(get_db)):
+    roi_settings = {
+        "height": 800,  
+        "width": int(470 * 1.3) 
+    }
+    vehicle_detection_service = DetectionHandler(
+        model_id=model_id,
+        db_session=db,  
+        roi_settings = roi_settings,  
+        snapped_folder=UPLOAD_DIR,
+        confidence_threshold=0.9,  
+        capture_range=10,  
+        output_dir="processed_videos",  
+        detected_frames_dir="detected_frames"  
+    )
+    await vehicle_detection_service.stop_processing(str(camera_id))
     try:
-        logging.debug(f"Attempting to stop camera with ID: {camera_id}")
-        logging.debug(f"Current active_camera_handlers: {list(active_camera_handlers.keys())}")
-        camera_id_str = str(camera_id)  
-        camera_handler = active_camera_handlers.get(camera_id_str)
-        if not camera_handler:
-            logging.warning(f"No active camera handler found for ID: {camera_id}")
-            raise ValueError(f"No active camera found for camera ID {camera_id}")
-        camera_handler.stop_camera()
-        del active_camera_handlers[camera_id_str]
-        logging.info(f"Camera feed for camera ID {camera_id} has been stopped.")
-        logging.debug(f"Current active_camera_handlers after removal: {list(active_camera_handlers.keys())}")
-        return {"message": f"Camera feed for camera ID {camera_id} has been stopped."}
+        if CameraHandler.is_active():
+            CameraHandler.get_instance().stop_camera()
+            logging.info("Camera feed has been stopped.")
+            return {"message": "Camera feed has been stopped."}
+        else:
+            logging.warning("No active camera to stop.")
+            return {"message": "No active camera to stop."}
     except Exception as e:
-        logging.error(f"Error stopping camera feed for camera ID {camera_id}: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Failed to stop camera feed for camera ID {camera_id}")
-
+        logging.error(f"Error stopping camera feed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to stop camera feed")
 
