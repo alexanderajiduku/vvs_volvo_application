@@ -24,3 +24,5 @@ yarn-error.log*
 
 node_modules
 .node_modules
+
+frontend\truck_measure_app\node_modules

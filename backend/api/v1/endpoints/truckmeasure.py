@@ -5,6 +5,7 @@ from app.database.database import get_db
 from app.services.vehicle_measure_detector import DetectionHandler
 from app.models.vehicledetails import VehicleDetail
 from app.utils.camera_utils import active_camera_handlers
+
 import logging
 from app.services.camera_handler import CameraHandler
 import os

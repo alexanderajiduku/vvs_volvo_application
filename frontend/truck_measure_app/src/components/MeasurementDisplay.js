@@ -78,8 +78,8 @@ const MeasurementDisplay = () => {
 
   return (
     <Card sx={{ 
-        maxWidth: 345, 
-        height: 200, 
+        maxWidth: 1000, 
+        height: 1000, 
         margin: 'auto', 
         marginTop: 5, 
         bgcolor: 'black', 
@@ -94,6 +94,7 @@ const MeasurementDisplay = () => {
           color: '#FFFFFF', 
           fontWeight: 'bold',
           textShadow: '2px 2px 8px rgba(0, 0, 0, 0.7)', 
+          fontSize: '25rem',
         }}>
         {latestMeasurement !== null ? `${latestMeasurement}` : '...'}
       </Typography>

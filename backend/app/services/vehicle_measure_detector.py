@@ -50,35 +50,35 @@ class DetectionHandler:
             os.makedirs(self.detected_frames_dir)
         
 
-    # async def process_video(self, input_source: str):
-    #     if input_source.isdigit():
-    #         self.camera_handler = CameraHandler(camera_id=int(input_source))
-    #     elif os.path.exists(input_source):
-    #         self.camera_handler = CameraHandler(camera_id=input_source)
-    #     else:
-    #         raise ValueError(f"Invalid input source: {input_source}")
-    #     self.camera_handler.start_camera()
+    async def process_video(self, input_source: str):
+         if input_source.isdigit():
+             self.camera_handler = CameraHandler(camera_id=int(input_source))
+         elif os.path.exists(input_source):
+             self.camera_handler = CameraHandler(camera_id=input_source)
+         else:
+             raise ValueError(f"Invalid input source: {input_source}")
+         self.camera_handler.start_camera()
 
-    #     try:
-    #         while self.is_running:
-    #             frame = self.camera_handler.get_frame()
-    #             if frame is None:
-    #                 break
+         try:
+             while self.is_running:
+                 frame = self.camera_handler.get_frame()
+                 if frame is None:
+                     break
 
-    #             preprocessed_frame, _, _ = await asyncio.get_running_loop().run_in_executor(None, preprocess_frame_func, frame)
-    #             async for height in self.process_frame(frame, preprocessed_frame):
-    #                 pass
+                 preprocessed_frame, _, _ = await asyncio.get_running_loop().run_in_executor(None, preprocess_frame_func, frame)
+                 async for height in self.process_frame(frame, preprocessed_frame):
+                     pass
                 
-    #             cv2.imshow('Vehicle Detection', frame)
-    #             if cv2.waitKey(1) & 0xFF == ord('q'):
-    #                 self.stop_processing()
-    #                 break
-    #     finally:
-    #         self.camera_handler.stop_camera()
+                 cv2.imshow('Vehicle Detection', frame)
+                 if cv2.waitKey(1) & 0xFF == ord('q'):
+                     self.stop_processing()
+                     break
+         finally:
+             self.camera_handler.stop_camera()
 
 
 
-
+    """
     async def process_video(self, input_source: str, websocket: WebSocket):
         if input_source.isdigit():
             self.camera_handler = CameraHandler(camera_id=int(input_source))
@@ -104,6 +104,8 @@ class DetectionHandler:
                 await asyncio.sleep(0.03)
         finally:
             self.camera_handler.stop_camera()
+            
+    """
 
 
     async def detect_and_track(self, frame) -> AsyncGenerator[int, None]:

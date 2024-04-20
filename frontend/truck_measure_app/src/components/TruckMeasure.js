@@ -4,7 +4,7 @@ import Grid from '@mui/material/Grid';
 import Typography from '@mui/material/Typography';
 import VideoUploadAndProcess from './VideoUploadAndProcess';
 import MeasurementsDisplay from './MeasurementDisplay';
-import VideoStream from './VideoFeed';
+{/*  import VideoStream from './VideoFeed'; */}
 
 const TruckMeasure = () => {
     const [isActive, setIsActive] = useState(false);
@@ -27,9 +27,11 @@ const TruckMeasure = () => {
                 <Grid item xs={12}>
                     <MeasurementsDisplay isActive={isActive} />
                 </Grid>
+                {/* 
                 <Grid item xs={12}>
                     <VideoStream /> 
                 </Grid>
+                 */}
             </Grid>
         </Container>
     );
