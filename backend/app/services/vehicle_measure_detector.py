@@ -77,37 +77,6 @@ class DetectionHandler:
              self.camera_handler.stop_camera()
 
 
-
-    """
-    async def process_video(self, input_source: str, websocket: WebSocket):
-        if input_source.isdigit():
-            self.camera_handler = CameraHandler(camera_id=int(input_source))
-        elif os.path.exists(input_source):
-            self.camera_handler = CameraHandler(camera_id=input_source)
-        else:
-            raise ValueError(f"Invalid input source: {input_source}")
-        
-        self.camera_handler.start_camera()
-
-        try:
-            while self.is_running:
-                frame = self.camera_handler.get_frame()
-                if frame is None:
-                    break
-                processed_frame = await self.process_frame(frame)
-                ret, jpeg = cv2.imencode('.jpg', processed_frame)
-                if ret:
-                    await websocket.send_bytes(jpeg.tobytes())
-                else:
-                    logging.error("Failed to encode frame")
-
-                await asyncio.sleep(0.03)
-        finally:
-            self.camera_handler.stop_camera()
-            
-    """
-
-
     async def detect_and_track(self, frame) -> AsyncGenerator[int, None]:
         loop = asyncio.get_running_loop()
         frame = cv2.resize(frame, (900, 700))
@@ -136,41 +105,50 @@ class DetectionHandler:
                 del active_camera_handlers[camera_id]
                 
 
+
     async def process_frame(self, frame, preprocessed_frame):
-        startX, startY, endX, endY, center_x = self._calculate_roi(frame)
-        cv2.rectangle(frame, (startX, startY), (endX, endY), (0, 255, 255), 2)
+        center_x = self._calculate_roi(frame)
         line_start_point = (center_x, 0)
         line_end_point = (center_x, frame.shape[0])
         cv2.line(frame, line_start_point, line_end_point, (0, 255, 255), 2)
-        async for height in self._process_detections(frame, preprocessed_frame, startX, startY, endX, endY, center_x):
+        
+        async for height in self._process_detections(frame, preprocessed_frame, center_x):
             yield height
 
-    async def _process_detections(self, frame, preprocessed_frame, startX, startY, endX, endY, center_x):
+       
+    def _is_crossing_line(self, x, w, center_x):
+        object_center = x + w // 2
+        return abs(object_center - center_x) <= self.capture_range
+
+    
+    async def _process_detections(self, frame, preprocessed_frame, center_x):
         _, _, seg_contours, scores = self.segmentation_model.detect(preprocessed_frame)
         for seg, score in zip(seg_contours, scores):
             if score > self.confidence_threshold:
                 x, y, w, h = cv2.boundingRect(seg)
-                if startX <= x <= endX and startY <= y <= endY:
-                    cv2.drawContours(frame, [seg], -1, (0, 255, 0), 2)
-                    cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
-                    self._check_and_save_snapshot(frame, seg, x, y, w, center_x)
-                    async for height in self._annotate_and_save(frame, seg, score, x, y, w, center_x):
-                        yield height
+                if self._is_crossing_line(x, w, center_x):
+                    await self._process_detection_and_save(frame, seg, x, y, w, h, center_x)
+                    truck_height_pixels = np.max(seg[:, 1]) - np.min(seg[:, 1])
+                    truck_height_cm = int(truck_height_pixels / 1.65)
+                    yield truck_height_cm
+
     
-    async def _check_and_save_snapshot(self, frame, seg, x, y, w, center_coords):
+    async def _process_detection_and_save(self, frame, seg, x, y, w, h, center_x):
         cx = x + w // 2
-        center_x, _ = center_coords
-        if center_x - self.capture_range <= cx <= center_x + self.capture_range:
+        if abs(cx - center_x) <= self.capture_range:
             obj_id = hash(tuple(seg.flatten())) % 1e6
             if obj_id not in self.crossed_ids:
                 self.crossed_ids.append(obj_id)
                 truck_height_pixels = np.max(seg[:, 1]) - np.min(seg[:, 1])
-                truck_width_pixels = w
                 truck_height_cm = int(truck_height_pixels / 1.65)
-                truck_width_cm = int(truck_width_pixels / 1.65)
-                await self._save_snapshot_and_record(frame, obj_id, truck_height_cm, truck_width_cm)
-
-
+                
+                cv2.putText(frame, f"Vehicle ID {obj_id}: Height {truck_height_cm} cm", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+                cv2.drawContours(frame, [seg], -1, (0, 255, 0), 3)  # Draw in red with thickness of 3
+                info_text = f"Vehicle ID {obj_id}: Height {truck_height_cm} cm"
+                cv2.putText(frame, info_text, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+                await self._save_snapshot_and_record(frame, obj_id, truck_height_cm)
+                
+                
     async def _annotate_and_save(self, frame, seg, score, x, y, w, center_x):
         cx = x + w // 2  
         obj_id = hash(tuple(seg.flatten())) % 1e6 
@@ -186,23 +164,16 @@ class DetectionHandler:
             info_text = f"Score: {score:.2f}, H: {truck_height_cm} cm"
             cv2.putText(frame, info_text, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
             yield truck_height_cm
-
-
+    
     def _calculate_roi(self, frame):
         frame_height, frame_width = frame.shape[:2]
-        center_x, center_y = frame_width // 2, frame_height // 2
-        roi_width, roi_height = self.roi_settings['width'], self.roi_settings['height']
-        offset = 0
-        startX = max(0, center_x - roi_width // 2 + offset)
-        startY = max(0, center_y - roi_height - 50)
-        endX = min(frame_width, startX + roi_width)
-        endY = min(frame_height, startY + roi_height)
-        return startX, startY, endX, endY, center_x
+        center_x = frame_width // 2  # or set this to any other appropriate fixed value
+        return center_x
 
-    async def _save_snapshot_and_record(self, frame, obj_id, height_cm, width_cm):
+    async def _save_snapshot_and_record(self, frame, obj_id, height_cm):
         snapshot_filename = os.path.join(self.snapped_folder, f'snapshot_{int(obj_id)}.jpg')
         cv2.imwrite(snapshot_filename, frame)
-        new_vehicle = VehicleDetail(height=height_cm, width=width_cm)
+        new_vehicle = VehicleDetail(height=height_cm)
         loop = asyncio.get_running_loop()
         await loop.run_in_executor(None, self.db_session.add, new_vehicle)
         await loop.run_in_executor(None, self.db_session.commit)
