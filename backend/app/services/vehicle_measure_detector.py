@@ -141,9 +141,6 @@ class DetectionHandler:
                 self.crossed_ids.append(obj_id)
                 truck_height_pixels = np.max(seg[:, 1]) - np.min(seg[:, 1])
                 truck_height_cm = int(truck_height_pixels / 1.65)
-                #new_height = VehicleDetail(vehicle_id=str(obj_id), height=truck_height_cm)
-                #self.db_session.add(new_height)
-                #self.db_session.commit()
                 await frames_queue.put(truck_height_cm)
                 cv2.putText(frame, f"Vehicle ID {obj_id}: Height {truck_height_cm} cm", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
                 cv2.drawContours(frame, [seg], -1, (0, 255, 0), 3)  # Draw in red with thickness of 3
@@ -152,11 +149,7 @@ class DetectionHandler:
                 await self._save_snapshot_and_record(frame, obj_id, truck_height_cm)
                 return truck_height_cm
                 
- 
-    def _calculate_roi(self, frame):
-        frame_height, frame_width = frame.shape[:2]
-        center_x = frame_width // 2  # or set this to any other appropriate fixed value
-        return center_x
+
 
     async def _save_snapshot_and_record(self, frame, obj_id, height_cm):
         snapshot_filename = os.path.join(self.snapped_folder, f'snapshot_{int(obj_id)}.jpg')
@@ -167,6 +160,12 @@ class DetectionHandler:
         await loop.run_in_executor(None, self.db_session.commit)
 
 
+    def _calculate_roi(self, frame):
+        frame_height, frame_width = frame.shape[:2]
+        center_x = frame_width // 2  # or set this to any other appropriate fixed value
+        return center_x
+    
+    
     def display_vehicle_info(self, frame: np.ndarray):
         completed_vehicles = len(self.vehicle_process)
         cv2.putText(frame, f'Completed Vehicles: {completed_vehicles}', (10, 35), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
