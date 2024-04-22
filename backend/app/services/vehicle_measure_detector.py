@@ -141,30 +141,18 @@ class DetectionHandler:
                 self.crossed_ids.append(obj_id)
                 truck_height_pixels = np.max(seg[:, 1]) - np.min(seg[:, 1])
                 truck_height_cm = int(truck_height_pixels / 1.65)
-                
+                #new_height = VehicleDetail(vehicle_id=str(obj_id), height=truck_height_cm)
+                #self.db_session.add(new_height)
+                #self.db_session.commit()
+                await frames_queue.put(truck_height_cm)
                 cv2.putText(frame, f"Vehicle ID {obj_id}: Height {truck_height_cm} cm", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
                 cv2.drawContours(frame, [seg], -1, (0, 255, 0), 3)  # Draw in red with thickness of 3
                 info_text = f"Vehicle ID {obj_id}: Height {truck_height_cm} cm"
                 cv2.putText(frame, info_text, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
                 await self._save_snapshot_and_record(frame, obj_id, truck_height_cm)
+                return truck_height_cm
                 
-                
-    async def _annotate_and_save(self, frame, seg, score, x, y, w, center_x):
-        cx = x + w // 2  
-        obj_id = hash(tuple(seg.flatten())) % 1e6 
-        if center_x - self.capture_range <= cx <= center_x + self.capture_range and obj_id not in self.crossed_ids:
-            self.crossed_ids.append(obj_id)  
-            truck_height_pixels = np.max(seg[:, 1]) - np.min(seg[:, 1])
-            truck_height_cm = int(truck_height_pixels / 1.65)
-            new_height = VehicleDetail(vehicle_id=str(obj_id), height=truck_height_cm)
-            self.db_session.add(new_height)
-            self.db_session.commit()
-            await frames_queue.put(truck_height_cm)
-            logging.info(f"Height measurement {truck_height_cm} for vehicle {obj_id} added to queue")
-            info_text = f"Score: {score:.2f}, H: {truck_height_cm} cm"
-            cv2.putText(frame, info_text, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
-            yield truck_height_cm
-    
+ 
     def _calculate_roi(self, frame):
         frame_height, frame_width = frame.shape[:2]
         center_x = frame_width // 2  # or set this to any other appropriate fixed value
@@ -173,7 +161,7 @@ class DetectionHandler:
     async def _save_snapshot_and_record(self, frame, obj_id, height_cm):
         snapshot_filename = os.path.join(self.snapped_folder, f'snapshot_{int(obj_id)}.jpg')
         cv2.imwrite(snapshot_filename, frame)
-        new_vehicle = VehicleDetail(height=height_cm)
+        new_vehicle = VehicleDetail(vehicle_id=str(obj_id), height=height_cm)
         loop = asyncio.get_running_loop()
         await loop.run_in_executor(None, self.db_session.add, new_vehicle)
         await loop.run_in_executor(None, self.db_session.commit)
