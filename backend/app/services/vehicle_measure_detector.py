@@ -6,12 +6,13 @@ from sqlalchemy.orm import Session
 from app.models.model import Model
 from .yolo_segmentation import YOLOSegmentation  
 from app.models.vehicledetails import VehicleDetail
-from app.services.camera_handler import CameraHandler
+#from app.services.camera_handler import CameraHandler
 from .preprocessing import preprocess_frame_func
 from app.utils.camera_utils import active_camera_handlers
 from app.shared.shared import frames_queue
 from typing import AsyncGenerator
 from fastapi import WebSocket
+from app.services.camera_handler import start_camera, stop_camera, get_frame
 import asyncio
 import logging
 
@@ -49,7 +50,7 @@ class DetectionHandler:
         if not os.path.exists(self.detected_frames_dir):
             os.makedirs(self.detected_frames_dir)
         
-
+    """
     async def process_video(self, input_source: str):
          if input_source.isdigit():
              self.camera_handler = CameraHandler(camera_id=int(input_source))
@@ -76,6 +77,37 @@ class DetectionHandler:
          finally:
              self.camera_handler.stop_camera()
 
+    """ 
+    async def process_video(self, input_source: str):
+        global camera_id  # Ensure there's a global variable for the camera_id if needed
+        
+        # Determine the input source and set the camera_id accordingly
+        if input_source.isdigit():
+            camera_id = int(input_source)
+        elif os.path.exists(input_source):
+            camera_id = input_source  # Assuming the `camera_id` can be a file path string
+        else:
+            raise ValueError(f"Invalid input source: {input_source}")
+
+        start_camera()
+
+        try:
+            while self.is_running:
+                frame = get_frame()
+                if frame is None:
+                    break
+
+                preprocessed_frame, _, _ = await asyncio.get_running_loop().run_in_executor(None, preprocess_frame_func, frame)
+                async for height in self.process_frame(frame, preprocessed_frame):
+                    pass
+            
+                cv2.imshow('Vehicle Detection', frame)
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    self.stop_processing()
+                    break
+        finally:
+            stop_camera()
+            cv2.destroyAllWindows()
 
     async def detect_and_track(self, frame) -> AsyncGenerator[int, None]:
         loop = asyncio.get_running_loop()

@@ -8,7 +8,7 @@ from app.shared.shared import frames_queue
 from asyncio import CancelledError
 import json
 import asyncio
-from app.services.camera_handler import CameraHandler
+#from app.services.camera_handler import CameraHandler
 import cv2
 
 
@@ -81,6 +81,7 @@ async def websocket_endpoint(websocket: WebSocket):
         except Exception as e:
             logging.error(f"Error during WebSocket closure: {e}")
 
+"""
 
 @app.websocket("/ws/video")
 async def websocket_video(websocket: WebSocket):
@@ -101,7 +102,7 @@ async def websocket_video(websocket: WebSocket):
         print("Client disconnected from video stream")
     finally:
         camera_handler.stop_camera() 
-
+"""
 
 if __name__ == "__main__":
     import uvicorn
