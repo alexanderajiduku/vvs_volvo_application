@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Card, Typography, CardContent } from '@mui/material';
+import { Card, Typography } from '@mui/material';
 
 
 const MeasurementDisplay = () => {
@@ -18,20 +18,6 @@ const MeasurementDisplay = () => {
       ws.current = new WebSocket('ws://localhost:8000/ws');
       ws.current.onopen = () => console.log('WebSocket Connected');
       reconnectAttempts.current = 0;
-      // ws.current.onmessage = (event) => {
-      //   console.log('Raw data:', event.data);
-      //   try {
-      //     const data = JSON.parse(event.data);
-      //     if (data.hasOwnProperty('height')) {
-      //       console.log('Parsed height:', data.height);
-      //       setLatestMeasurement(data.height);
-      //     } else {
-      //       console.log('Non-height message received:', data.type);
-      //     }
-      //   } catch (error) {
-      //     console.error('Error parsing JSON:', error);
-      //   }
-      // };
 
       ws.current.onmessage = (event) => {
         console.log('Raw data:', event.data);

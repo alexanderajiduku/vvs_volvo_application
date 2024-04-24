@@ -1,20 +1,27 @@
 import cv2
 import pickle
 import numpy as np
+import os
 
 class CameraFeedUndistorter:
-    def __init__(self, calibration_file_path, dist_coeffs_file_path, camera_matrix_file_path):
-        self.calibration_file_path = calibration_file_path
-        self.dist_coeffs_file_path = dist_coeffs_file_path
-        self.camera_matrix_file_path = camera_matrix_file_path
+    CALIBRATION_DIR = "calibrations"
+    CAMERA_MATRIX_FILE = 'cameramatrix.pkl'
+    DIST_COEFFS_FILE = 'dist.pkl'
+    
+    def __init__(self):
+        self.camera_matrix_file_path = os.path.join(self.CALIBRATION_DIR, self.CAMERA_MATRIX_FILE)
+        self.dist_coeffs_file_path = os.path.join(self.CALIBRATION_DIR, self.DIST_COEFFS_FILE)
 
         self.load_calibration_parameters()
 
     def load_calibration_parameters(self):
-        with open(self.camera_matrix_file_path, 'rb') as file:
-            self.camera_matrix = pickle.load(file)
-        with open(self.dist_coeffs_file_path, 'rb') as file:
-            self.dist_coeffs = pickle.load(file)
+        try:
+            with open(self.camera_matrix_file_path, 'rb') as file:
+                self.camera_matrix = pickle.load(file)
+            with open(self.dist_coeffs_file_path, 'rb') as file:
+                self.dist_coeffs = pickle.load(file)
+        except FileNotFoundError as e:
+            raise FileNotFoundError(f"Calibration file not found: {e}")
 
     def undistort_frame(self, frame):
         h, w = frame.shape[:2]
