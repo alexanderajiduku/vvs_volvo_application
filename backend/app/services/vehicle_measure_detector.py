@@ -12,6 +12,7 @@ from app.utils.camera_utils import active_camera_handlers
 from app.shared.shared import frames_queue
 from typing import AsyncGenerator
 from fastapi import WebSocket
+from vmbpy import *
 import asyncio
 import logging
 
@@ -49,7 +50,7 @@ class DetectionHandler:
         if not os.path.exists(self.detected_frames_dir):
             os.makedirs(self.detected_frames_dir)
         
-
+    """
     async def process_video(self, input_source: str):
          if input_source.isdigit():
              self.camera_handler = CameraHandler(camera_id=int(input_source))
@@ -75,6 +76,46 @@ class DetectionHandler:
                      break
          finally:
              self.camera_handler.stop_camera()
+        """ 
+        
+ 
+
+    async def process_video(self, input_source: str):
+        with VmbSystem.get_instance() as vimba:
+            cameras = vimba.get_all_cameras()
+            if not cameras:
+                print('No cameras found')
+                return
+
+            with cameras[0] as cam:
+                if cam.get_pixel_format() != PixelFormat.Mono8:
+                    try:
+                        cam.set_pixel_format(PixelFormat.Bgr8)
+                    except Exception as e:
+                        print("Error setting pixel format:", e)
+                        return
+
+                #fourcc = cv2.VideoWriter_fourcc(*'XVID')
+                #out = cv2.VideoWriter('output_videosnap17.avi', fourcc, 10.0, (1200, 800))
+
+                try:
+                    while self.is_running:
+                        frame = cam.get_frame()
+                        img = frame.as_opencv_image()
+                        if img is None:
+                            break
+
+                        preprocessed_frame, _, _ = await asyncio.get_running_loop().run_in_executor(None, preprocess_frame_func, img)
+                        async for height in self.process_frame(img, preprocessed_frame):
+                            pass
+
+                        cv2.imshow('Vehicle Detection', img)
+                        out.write(img)
+                        if cv2.waitKey(1) & 0xFF == ord('q'):
+                            self.stop_processing()
+                            break
+                finally:
+                    out.release()
 
 
     async def detect_and_track(self, frame) -> AsyncGenerator[int, None]:

@@ -63,6 +63,7 @@ async def process_truck_measure_endpoint_camera(model_id: int, camera_id: int, d
     )
     await vehicle_detection_service.process_video(str(camera_id))
     logging.info(f"Camera {camera_id} started successfully. Adding to active_camera_handlers.")
+    """
     if CameraHandler.is_active():
         CameraHandler.get_instance().stop_camera()
         logging.info("Previous camera stopped to start a new one.")
@@ -73,6 +74,7 @@ async def process_truck_measure_endpoint_camera(model_id: int, camera_id: int, d
     logging.debug(f"Current active_camera_handlers: {list(active_camera_handlers.keys())}")
     return {"message": f"Camera {camera_id} feed is being processed and heights are being saved."}
 
+    """
 
 @router.post("/stop-camera-feed/{camera_id}")
 async def stop_camera_feed(model_id: int, camera_id: int, db: Session = Depends(get_db)):
