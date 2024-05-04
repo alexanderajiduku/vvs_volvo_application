@@ -406,6 +406,8 @@ from .undistortion_class import CameraFeedUndistorter
 from vmbpy import VmbSystem, PixelFormat
 import asyncio
 import logging
+import random
+import string
 
 
 class DetectionHandler:
@@ -419,12 +421,8 @@ class DetectionHandler:
 
         self.db_session = db_session
         self.segmentation_model = YOLOSegmentation(self.model_path)
-        self.roi_settings = roi_settings
         self.snapped_folder = snapped_folder
         self.confidence_threshold = confidence_threshold
-        self.capture_range = capture_range
-        self.crossed_ids = []
-        self.camera_handler = None
         self.output_dir = output_dir
         self.detected_frames_dir = detected_frames_dir
         self.save_dir = save_dir
@@ -456,9 +454,9 @@ class DetectionHandler:
                         print("Error setting pixel format:", e)
                         return
 
-                fourcc = cv2.VideoWriter_fourcc(*'XVID')
-                video_out_path = os.path.join(self.output_dir, 'output_video.avi')
-                out = cv2.VideoWriter(video_out_path, fourcc, 20.0, (1920, 1080))
+                #fourcc = cv2.VideoWriter_fourcc(*'XVID')
+                #video_out_path = os.path.join(self.output_dir, 'output_video.avi')
+                #out = cv2.VideoWriter(video_out_path, fourcc, 20.0, (1920, 1080))
 
                 try:
                     while self.is_running:
@@ -486,7 +484,34 @@ class DetectionHandler:
                     cv2.destroyAllWindows()
                     
                     
-    def get_pixel_to_cm_ratio(mask_height_pixels):
+    
+    async def process_detection(self, undistorted_img, seg):
+        min_x = np.min(seg[:, 0])
+        max_x = np.max(seg[:, 0])
+        
+        if min_x <= self.line_x_position <= max_x:
+            mask_height_pixels = np.max(seg[:, 1]) - np.min(seg[:, 1])
+            pixel_to_cm_ratio = get_pixel_to_cm_ratio(mask_height_pixels)
+            mask_height_cm = mask_height_pixels / pixel_to_cm_ratio
+            obj_id = self.generate_custom_id()  
+            
+            cv2.drawContours(undistorted_img, [seg], -1, (0, 255, 0), 2)
+            cv2.putText(undistorted_img, f'Mask Height: {mask_height_cm:.2f} cm', (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+            await self.save_snapshot_and_record(undistorted_img, obj_id, mask_height_cm)
+
+    async def save_snapshot_and_record(self, undistorted_frame, obj_id, mask_height_cm):
+        snapshot_filename = os.path.join(self.snapped_folder, f'{int(obj_id)}.jpg')
+        cv2.imwrite(snapshot_filename, undistorted_frame)
+        new_vehicle = VehicleDetail(vehicle_id=str(obj_id), height=mask_height_cm)
+        self.db_session.add(new_vehicle)
+        self.db_session.commit()
+        await frames_queue.put(mask_height_cm)  
+        
+    def stop_processing(self):
+        self.is_running = False  
+                
+ 
+    def get_pixel_to_cm_ratio(self, mask_height_pixels):
         ratio_dict = {
             (0, 1600): 4.7636,
             (1601, 1650): 4.91044,
@@ -505,31 +530,7 @@ class DetectionHandler:
                 return ratio
         return 5  
 
-
-    async def process_detection(self, undistorted_img, seg):
-        min_x = np.min(seg[:, 0])
-        max_x = np.max(seg[:, 0])
-        mask_height_pixels = np.max(seg[:, 1]) - np.min(seg[:, 1])
-        obj_id = hash(tuple(seg.flatten())) % 1e6 
-
-       
-        pixel_to_cm_ratio = get_pixel_to_cm_ratio(mask_height_pixels)
-        mask_height_cm = mask_height_pixels / pixel_to_cm_ratio
-
-
-        cv2.drawContours(undistorted_img, [seg], -1, (0, 255, 0), 2)
-        cv2.putText(undistorted_img, f'Mask Height: {mask_height_cm:.2f} cm', (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-        
-        if min_x <= self.line_x_position <= max_x:
-            await self.save_snapshot_and_record(undistorted_img, obj_id, mask_height_cm)
-
-    async def save_snapshot_and_record(self, undistorted_frame, obj_id, mask_height_cm):
-        snapshot_filename = os.path.join(self.snapped_folder, f'snapshot_{int(obj_id)}.jpg')
-        cv2.imwrite(snapshot_filename, undistorted_frame)
-        new_vehicle = VehicleDetail(vehicle_id=str(obj_id), height=mask_height_cm)
-        self.db_session.add(new_vehicle)
-        self.db_session.commit()
-        await frames_queue.put(mask_height_cm)  
-        
-    def stop_processing(self):
-        self.is_running = False        
+    def generate_custom_id(self):
+        letters = ''.join(random.choices(string.ascii_uppercase, k=2))
+        numbers = ''.join(random.choices(string.digits, k=5))
+        return f"{letters}{numbers}"

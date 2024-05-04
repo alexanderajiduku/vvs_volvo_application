@@ -20,7 +20,11 @@ async def calibrate_camera(camera_id: int, db: Session = Depends(get_db)):
     """
     try:
         calibration_service = CameraCalibrationService(db, camera_id)
-        calibration_file_path = calibration_service.perform_calibration()  
-        return {"message": "Calibration successful", "calibration_file_path": calibration_file_path}  
+        camera_matrix_path, dist_coeffs_path = calibration_service.perform_calibration()  
+        return CalibrationResponse(
+            message="Calibration successful", 
+            camera_matrix_path=camera_matrix_path,
+            dist_coeffs_path=dist_coeffs_path
+        )
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
