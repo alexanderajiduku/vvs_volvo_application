@@ -124,7 +124,7 @@ const ImageUploader = ({ onUploadSuccess }) => {
                     }}
                 >
                     Choose File
-                    <input id="image-upload-input" type="file" hidden onChange={handleFileChange} ref={fileInputRef} />
+                    <input id="image-upload-input" type="file" hidden multiple onChange={handleFileChange} ref={fileInputRef} />
                     <CloudUploadIcon />
                 </Button>
                 {selectedFile && <Typography variant="caption" sx={{ display: 'block', mt: theme.spacing(1) }}>{selectedFile.name}</Typography>}

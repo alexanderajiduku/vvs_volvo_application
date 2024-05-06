@@ -164,8 +164,8 @@ import React, { useState } from 'react';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import axios from 'axios';
-import { BASE_URL } from '../config/config'; 
-import ModelSelection from './ModelSelection'; 
+import { BASE_URL } from '../config/config';
+import ModelSelection from './ModelSelection';
 
 const VideoUploadAndProcess = ({ onUploadSuccess }) => {
     const [selectedFile, setSelectedFile] = useState(null);
@@ -231,12 +231,12 @@ const VideoUploadAndProcess = ({ onUploadSuccess }) => {
 
     const handleStopCamera = async () => {
         try {
-            const response = await axios.post(`${BASE_URL}/api/v1/stop-camera-feed/${cameraId}`, {}, {
+            const response = await axios.post(`${BASE_URL}/api/v1/stop-camera-feed`, {}, {
                 headers: {
                     'Content-Type': 'application/json',
                 },
             });
-    
+
             if (response.data) {
                 console.log(response.data.message);
             }
@@ -244,7 +244,7 @@ const VideoUploadAndProcess = ({ onUploadSuccess }) => {
             console.error('Error stopping camera:', error);
         }
     };
-    
+
 
     const handleCameraIdChange = (e) => {
         const newValue = e.target.value;
@@ -264,25 +264,25 @@ const VideoUploadAndProcess = ({ onUploadSuccess }) => {
                 sx={{
                     marginTop: 2,
                     marginRight: 2,
-                    width: '150px', 
-                    input: { color: '#fff' }, 
-                    label: { color: '#aaa' }, 
+                    width: '150px',
+                    input: { color: '#fff' },
+                    label: { color: '#aaa' },
                     '& .MuiOutlinedInput-root': {
                         '& fieldset': {
                             borderColor: '#fff',
                         },
                         '&:hover fieldset': {
-                            borderColor: '#fff', 
+                            borderColor: '#fff',
                         },
                         '&.Mui-focused fieldset': {
-                            borderColor: '#fff', 
+                            borderColor: '#fff',
                         },
                     },
                 }}
                 InputLabelProps={{
-                    style: { color: '#fff' }, 
+                    style: { color: '#fff' },
                 }}
-                fullWidth={false} 
+                fullWidth={false}
             />
             <Button variant="contained" component="label" sx={{ marginTop: 2 }}>
                 Select Video
@@ -296,7 +296,7 @@ const VideoUploadAndProcess = ({ onUploadSuccess }) => {
             </Button>
             <Button variant="contained" color="error" onClick={handleStopCamera} sx={{ marginTop: 2, marginLeft: 10 }}>
                 Stop Camera
-            </Button>   
+            </Button>
         </div>
     );
 };

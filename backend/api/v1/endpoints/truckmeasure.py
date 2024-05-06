@@ -5,7 +5,6 @@ from app.database.database import get_db
 from app.services.vehicle_measure_detector import DetectionHandler
 from app.models.vehicledetails import VehicleDetail
 from app.utils.camera_utils import active_camera_handlers
-
 import logging
 from app.services.camera_handler import CameraHandler
 import os
@@ -63,18 +62,7 @@ async def process_truck_measure_endpoint_camera(model_id: int, camera_id: int, d
     )
     await vehicle_detection_service.process_video(str(camera_id))
     logging.info(f"Camera {camera_id} started successfully. Adding to active_camera_handlers.")
-    """
-    if CameraHandler.is_active():
-        CameraHandler.get_instance().stop_camera()
-        logging.info("Previous camera stopped to start a new one.")
-    camera_handler = CameraHandler(camera_id=camera_id)
-    camera_handler.start_camera()
-    active_camera_handlers[str(camera_id)] = camera_handler
-    logging.info(f"CameraHandler for camera ID {camera_id} added to active_camera_handlers.")
-    logging.debug(f"Current active_camera_handlers: {list(active_camera_handlers.keys())}")
-    return {"message": f"Camera {camera_id} feed is being processed and heights are being saved."}
-
-    """
+    
 
 @router.post("/stop-camera-feed/{camera_id}")
 async def stop_camera_feed(model_id: int, camera_id: int, db: Session = Depends(get_db)):
@@ -122,3 +110,4 @@ async def stop_camera_feed(camera_id: int):
         logging.error(f"Error stopping camera feed for {camera_id}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to stop camera feed")
 """
+
