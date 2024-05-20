@@ -683,6 +683,7 @@ class DetectionHandler:
 
 """
 
+
 import cv2
 import numpy as np
 import os
@@ -720,6 +721,7 @@ class DetectionHandler:
         self.undistorter = CameraFeedUndistorter()
         self.processed_objects = {}  # Track objects and their last known positions
         self.line_x_position = 750  
+        self.line_x_position_2 = 2200 
 
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
@@ -756,7 +758,8 @@ class DetectionHandler:
 
                         undistorted_img = self.undistorter.undistort_frame(img)
                         _, _, seg_contours, scores = self.segmentation_model.detect(undistorted_img)
-                        cv2.line(undistorted_img, (self.line_x_position, 0), (self.line_x_position, img.shape[0]), (255, 0, 0), 2)
+                        cv2.line(undistorted_img, (self.line_x_position, 0), (self.line_x_position, img.shape[0]), (0, 255, 0), 5)
+                        cv2.line(undistorted_img, (self.line_x_position_2, 0), (self.line_x_position_2, img.shape[0]), (255, 255, 0), 5)
 
                         if await self.detect_and_process(undistorted_img, seg_contours, scores):
                             # Exit after capturing one frame
@@ -837,3 +840,5 @@ class DetectionHandler:
         letters = ''.join(random.choices(string.ascii_uppercase, k=2))
         numbers = ''.join(random.choices(string.digits, k=5))
         return f"{letters}{numbers}"
+        
+        
