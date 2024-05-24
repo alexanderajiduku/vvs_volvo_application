@@ -5,6 +5,8 @@ import Container from '@mui/material/Container';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import VehicleDetailTable from './VehicleDetailTable';
 import Paper from '@mui/material/Paper';
+import LineChart from './LineChart';
+import BarChart from './BarChart';
 
 const theme = createTheme();
 
@@ -16,21 +18,17 @@ const Dashboard = () => {
                     <Grid item xs={12} md={8}>
                         <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 240 }}>
                             <Typography variant="h6" gutterBottom>
-                                Analytics Overview
+                                Number of Vehicles Over Time
                             </Typography>
-                            <Typography>
-                                Placeholder for analytics overview charts and data.
-                            </Typography>
+                            <LineChart />
                         </Paper>
                     </Grid>
                     <Grid item xs={12} md={4}>
                         <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 240 }}>
                             <Typography variant="h6" gutterBottom>
-                                Recent Activities
+                                Vehicle Height Distribution
                             </Typography>
-                            <Typography>
-                                Placeholder for recent activities or notifications.
-                            </Typography>
+                            <BarChart />
                         </Paper>
                     </Grid>
                     <Grid item xs={12}>
