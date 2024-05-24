@@ -17,12 +17,12 @@ import { BASE_URL } from '../config/config';
  */
 
 
-  const AuthApi = {
-    getAuthToken: () => localStorage.getItem('authToken'),
-    setAuthToken: (token) => localStorage.setItem('authToken', token),
-    clearAuthToken: () => localStorage.removeItem('authToken'),
+const AuthApi = {
+  getAuthToken: () => localStorage.getItem('authToken'),
+  setAuthToken: (token) => localStorage.setItem('authToken', token),
+  clearAuthToken: () => localStorage.removeItem('authToken'),
 
-  
+
   signup: async (formData) => {
     try {
       const response = await axios.post(`${BASE_URL}/api/v1/signup`, formData);
@@ -38,10 +38,10 @@ import { BASE_URL } from '../config/config';
     try {
       const response = await axios.post(`${BASE_URL}/api/v1/signin`, formData);
       const { access_token } = response.data;
-      
+
       if (access_token) {
-        AuthApi.setAuthToken(access_token); 
-        return { success: true, user: response.data }; 
+        AuthApi.setAuthToken(access_token);
+        return { success: true, user: response.data };
       } else {
         console.error('SignIn failed: Invalid response from server', response);
         return { success: false, errors: ["Invalid response from server."] };
@@ -49,14 +49,14 @@ import { BASE_URL } from '../config/config';
     } catch (error) {
       console.error('Login error:', error.response || error);
       const errors = error.response?.data?.detail || ["An unexpected error occurred. Please try again."];
-      return { success: false, errors }; 
+      return { success: false, errors };
     }
   },
 
-  
+
   uploadImage: async (imageFile, authToken) => {
     const formData = new FormData();
-    formData.append('file', imageFile); 
+    formData.append('file', imageFile);
 
     try {
       const response = await axios.post(`${BASE_URL}/api/v1/uploadimages`, formData, {
@@ -107,20 +107,38 @@ import { BASE_URL } from '../config/config';
       return { success: false, errors };
     }
   },
-uploadModel: async (formData) => {
-  try {
-    const response = await axios.post(`${BASE_URL}/api/v1/model`, formData, {
-      headers: {
-        'Authorization': `Bearer ${AuthApi.getAuthToken()}`
-      }
-    });
-    return { success: true, data: response.data };
-  } catch (error) {
-    console.error('Model upload error:', error.response || error);
-    const errors = error.response?.data?.detail || ["An unexpected error occurred during model upload. Please try again."];
-    return { success: false, errors };
+
+  // Add this method to AuthApi
+  deleteCamera: async (cameraId) => {
+    try {
+      const response = await axios.delete(`${BASE_URL}/api/v1/camera/${cameraId}`, {
+        headers: {
+          'Authorization': `Bearer ${AuthApi.getAuthToken()}`
+        }
+      });
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error('Error deleting camera:', error.response || error);
+      const errors = error.response?.data?.detail || ["An unexpected error occurred while deleting the camera. Please try again."];
+      return { success: false, errors };
+    }
   }
-},
+  ,
+
+  uploadModel: async (formData) => {
+    try {
+      const response = await axios.post(`${BASE_URL}/api/v1/model`, formData, {
+        headers: {
+          'Authorization': `Bearer ${AuthApi.getAuthToken()}`
+        }
+      });
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error('Model upload error:', error.response || error);
+      const errors = error.response?.data?.detail || ["An unexpected error occurred during model upload. Please try again."];
+      return { success: false, errors };
+    }
+  },
 
   getAllModels: async () => {
     try {
@@ -150,7 +168,22 @@ uploadModel: async (formData) => {
       const errors = error.response?.data?.detail || ["An unexpected error occurred while fetching model path. Please try again."];
       return { success: false, errors };
     }
-  }
+  },
+
+  deleteModel: async (modelId) => {
+    try {
+      const response = await axios.delete(`${BASE_URL}/api/v1/model/${modelId}`, {
+        headers: {
+          'Authorization': `Bearer ${AuthApi.getAuthToken()}`
+        }
+      });
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error('Error deleting model:', error.response || error);
+      const errors = error.response?.data?.detail || ["An unexpected error occurred while deleting the model. Please try again."];
+      return { success: false, errors };
+    }
+  },
 };
 
 export default AuthApi;

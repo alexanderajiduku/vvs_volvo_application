@@ -1,4 +1,3 @@
-# app/schemas/model.py
 from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
@@ -17,7 +16,6 @@ class ModelInDBBase(ModelBase):
     """
     Base class for models stored in the database.
     """
-
     id: Optional[int] = None
     created_at: Optional[datetime] = None
 
@@ -26,3 +24,10 @@ class ModelInDBBase(ModelBase):
 
 class Model(ModelInDBBase):
     pass 
+
+class ModelResponse(ModelInDBBase):
+    filename: str
+    created_at: datetime
+
+    class Config:
+        orm_mode = True

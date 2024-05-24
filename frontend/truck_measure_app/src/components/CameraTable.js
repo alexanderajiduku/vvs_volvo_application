@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Paper, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, Typography, Box } from '@mui/material';
+import { Paper, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, Typography, Box, IconButton } from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
 import AuthApi from '../api/api';
 
 const columns = [
@@ -23,6 +24,12 @@ const columns = [
     minWidth: 170,
     align: 'right',
   },
+  {
+    id: 'actions',
+    label: 'Actions',
+    minWidth: 170,
+    align: 'center',
+  },
 ];
 
 /**
@@ -37,7 +44,7 @@ const CameraTable = () => {
   useEffect(() => {
     const fetchCameras = async () => {
       try {
-        const response = await AuthApi.getAllCameras(); 
+        const response = await AuthApi.getAllCameras();
         if (response.success) {
           setCameras(response.cameras);
         } else {
@@ -50,6 +57,19 @@ const CameraTable = () => {
 
     fetchCameras();
   }, []);
+
+  const handleDelete = async (cameraId) => {
+    try {
+      const response = await AuthApi.deleteCamera(cameraId);
+      if (response.success) {
+        setCameras(cameras.filter((camera) => camera.id !== cameraId));
+      } else {
+        console.error('Failed to delete camera:', response.errors);
+      }
+    } catch (error) {
+      console.error('Error deleting camera:', error);
+    }
+  };
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -85,6 +105,15 @@ const CameraTable = () => {
               {cameras.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((camera) => (
                 <TableRow hover tabIndex={-1} key={camera.id}>
                   {columns.map((column) => {
+                    if (column.id === 'actions') {
+                      return (
+                        <TableCell key={column.id} align={column.align || 'center'} sx={{ color: '#fff' }}>
+                          <IconButton onClick={() => handleDelete(camera.id)} color="secondary">
+                            <DeleteIcon />
+                          </IconButton>
+                        </TableCell>
+                      );
+                    }
                     const value = camera[column.id];
                     return (
                       <TableCell key={column.id} align={column.align || 'center'} sx={{ color: '#fff' }}>

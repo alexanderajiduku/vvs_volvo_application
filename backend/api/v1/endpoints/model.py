@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 from sqlalchemy.orm import Session
 from app import crud, schemas
 from app.database.database import get_db
-from app.schemas.model import Model as SchemaModel, ModelCreate
+from app.schemas.model import Model as SchemaModel, ModelCreate, ModelResponse
 from app.crud.crud_model import CRUDModel
 from app.models.model import Model
 
@@ -74,3 +74,33 @@ async def get_model_path(model_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail=f"Model file for ID {model_id} not found at {model_path}")
 
     return {"model_path": model_path}
+
+@router.delete("/model/{model_id}", response_model=ModelResponse)
+async def delete_model(model_id: int, db: Session = Depends(get_db)):
+    """
+    Delete a model by ID.
+
+    Parameters:
+    - model_id: The ID of the model to delete.
+    - db: The database session.
+
+    Returns:
+    - ModelResponse: The details of the deleted model.
+
+    Raises:
+    - HTTPException: If the model is not found.
+    """
+    model = db.query(Model).filter(Model.id == model_id).first()
+    if not model:
+        raise HTTPException(status_code=404, detail="Model not found")
+    
+    # Delete the file associated with the model
+    model_path = os.path.join(UPLOAD_DIR, model.filename)
+    if os.path.exists(model_path):
+        os.remove(model_path)
+    
+    # Delete the model from the database
+    db.delete(model)
+    db.commit()
+    
+    return ModelResponse(**model.__dict__)
