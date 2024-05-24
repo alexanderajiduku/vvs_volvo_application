@@ -2,21 +2,29 @@ import React from "react";
 import { Route, Routes, Navigate } from "react-router-dom";
 import Home from "../components/Home";
 import SignupForm from "../auth/SignupForm";
-import PrivateRoute from "./PrivateRoute"; 
+import PrivateRoute from "./PrivateRoute";
 import Calibration from "../components/Calibration";
 import MLModel from "../components/MLModel";
-import AIProcesses from "../components/AIProcesses"; 
+import AIProcesses from "../components/AIProcesses";
 import SigninForm from "../auth/SigninForm";
 import Ultralytics from "../components/Ultralytics";
 import TruckMeasure from "../components/TruckMeasure";
+import Dashboard from "../components/Dashboard";
 
-const RoutesNav = ({signin, signup}) => {
+const RoutesNav = ({ signin, signup }) => {
     return (
         <div className="pt-5">
             <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/signin" element={<SigninForm />} />
                 <Route path="/signup" element={<SignupForm />} />
+
+
+                <Route path="/dashboard" element={
+                    <PrivateRoute>
+                        <Dashboard />
+                    </PrivateRoute>
+                } />
 
                 <Route path="/calibration" element={
                     <PrivateRoute>
@@ -30,7 +38,7 @@ const RoutesNav = ({signin, signup}) => {
                 } />
                 <Route path="/aiprocesses" element={
                     <PrivateRoute>
-                        <AIProcesses /> 
+                        <AIProcesses />
                     </PrivateRoute>
                 } />
                 <Route path="/ultralytics" element={
@@ -38,11 +46,12 @@ const RoutesNav = ({signin, signup}) => {
                         <Ultralytics />
                     </PrivateRoute>
                 } />
-                  <Route path="/truckmeasure" element={
+                <Route path="/truckmeasure" element={
                     <PrivateRoute>
                         <TruckMeasure />
                     </PrivateRoute>
                 } />
+
                 <Route path="/*" element={<Navigate to="/" />} />
             </Routes>
         </div>

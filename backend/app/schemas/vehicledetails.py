@@ -4,7 +4,7 @@ from datetime import datetime
 class VehicleDetailBase(BaseModel):
     vehicle_id: str
     height: int
-    model_id: int
+   
 
 class VehicleDetailCreate(VehicleDetailBase):
     pass

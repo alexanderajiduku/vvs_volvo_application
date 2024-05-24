@@ -1,15 +1,17 @@
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, Query, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
+from typing import List
 from app.database.database import get_db
 from app.services.vehicle_measure_detector import DetectionHandler
 from app.models.vehicledetails import VehicleDetail
 from app.utils.camera_utils import active_camera_handlers
 import logging
 from app.services.camera_handler import CameraHandler
-import os
+from app.schemas.vehicledetails import VehicleDetailResponse
 import shutil
 import uuid
+import os
 
 router = APIRouter()
 
@@ -93,21 +95,4 @@ async def stop_camera_feed(model_id: int, camera_id: int, db: Session = Depends(
         logging.error(f"Error stopping camera feed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to stop camera feed")
     
-    """
-
-@router.post("/stop-camera-feed/{camera_id}")
-async def stop_camera_feed(camera_id: int):
-    try:
-        if camera_id in active_camera_handlers:
-            #camera_handler = active_camera_handlers[camera_id]
-            #camera_handler.stop_camera()
-            CameraHandler.get_instance().stop_camera()
-            del active_camera_handlers[camera_id]
-            return {"message": f"Camera {camera_id} feed has been successfully stopped."}
-        else:
-            return {"message": "No active camera to stop."}
-    except Exception as e:
-        logging.error(f"Error stopping camera feed for {camera_id}: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Failed to stop camera feed")
-"""
 

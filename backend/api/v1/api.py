@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from api.v1.endpoints import auth , uploadimages, calibration, camera, getuploadedimages, camera, model, videofeed, ultralytics, truckmeasure, video_router
+from api.v1.endpoints import auth , uploadimages, calibration, camera, getuploadedimages, camera, model, videofeed, ultralytics, truckmeasure, video_router, vehicle
 
 
 api_router = APIRouter()
@@ -13,6 +13,7 @@ api_router.include_router(videofeed.router, tags=["videofeed"])
 api_router.include_router(ultralytics.router, tags=["ultralytics"])
 api_router.include_router(truckmeasure.router, tags=["truckmeasure"])
 api_router.include_router(video_router.router, tags=["video_router"])
+api_router.include_router(vehicle.router, tags=["vehicle"])
 
 
 """

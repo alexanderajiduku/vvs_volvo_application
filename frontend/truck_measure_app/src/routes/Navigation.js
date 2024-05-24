@@ -24,6 +24,10 @@ const Navigation = () => {
             const displayName = currentUser.first_name || currentUser.username;
             return (
                 <Box sx={{ flexGrow: 1, justifyContent: 'flex-end', display: 'flex' }}>
+
+                    <Button variant="text" component={NavLink} to="/dashboard" sx={{ color: 'white', mr: 2 }}>
+                        Dashboard
+                    </Button>
                     <Button variant="text" component={NavLink} to="/calibration" sx={{ color: 'white', mr: 2 }}>
                         Calibration
                     </Button>
@@ -71,7 +75,7 @@ const Navigation = () => {
                 </Toolbar>
             </Container>
         </AppBar>
-    );   
+    );
 };
 
 export default Navigation;
