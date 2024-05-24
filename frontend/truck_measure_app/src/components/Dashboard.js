@@ -16,7 +16,7 @@ const Dashboard = () => {
             <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
                 <Grid container spacing={5} justifyContent="space-between">
                     <Grid item xs={12} md={8}>
-                        <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 240 }}>
+                        <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 400 }}>
                             <Typography variant="h6" gutterBottom>
                                 Number of Vehicles Month-Year
                             </Typography>
@@ -24,7 +24,7 @@ const Dashboard = () => {
                         </Paper>
                     </Grid>
                     <Grid item xs={12} md={4}>
-                        <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 240 }}>
+                        <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 400 }}>
                             <Typography variant="h6" gutterBottom>
                                 Vehicle Height Distribution
                             </Typography>
