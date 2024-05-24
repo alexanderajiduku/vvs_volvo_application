@@ -18,7 +18,7 @@ const Dashboard = () => {
                     <Grid item xs={12} md={8}>
                         <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 240 }}>
                             <Typography variant="h6" gutterBottom>
-                                Number of Vehicles Over Time
+                                Number of Vehicles Month-Year
                             </Typography>
                             <LineChart />
                         </Paper>

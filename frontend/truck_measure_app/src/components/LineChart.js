@@ -63,6 +63,9 @@ const LineChart = () => {
                         },
                         ticks: {
                             color: '#fff',
+                            autoSkip: false, // Ensure all labels are shown
+                            maxRotation: 45, // Rotate labels if needed
+                            minRotation: 45,
                         },
                         grid: {
                             color: 'rgba(255, 255, 255, 0.2)',
