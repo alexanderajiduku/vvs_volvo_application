@@ -94,7 +94,7 @@ ultralytics==8.1.15
 urllib3==2.2.1
 uvicorn==0.27.0.post1
 uvloop==0.19.0
-vmbpy @ file:///Users/Rednax/Library/CloudStorage/OneDrive-Personal/Springboard%20Boot%20Camp/Capstone_2/backend/vmbpy-1.0.4-py3-none-any.whl#sha256=101f29ef671a009e158a25d3041c0c2dd39324c3d4c7f016f974c01086bc4bd1
+#vmbpy @ file:///Users/Rednax/Library/CloudStorage/OneDrive-Personal/Springboard%20Boot%20Camp/Capstone_2/backend/vmbpy-1.0.4-py3-none-any.whl#sha256=101f29ef671a009e158a25d3041c0c2dd39324c3d4c7f016f974c01086bc4bd1
 watchfiles==0.21.0
 websocket-client==1.7.0
 websockets==12.0
