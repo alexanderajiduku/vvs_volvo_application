@@ -49,19 +49,52 @@ const BarChart = () => {
     }
 
     return (
-        <Bar
-            data={chartData}
-            options={{
-                scales: {
-                    y: {
-                        ticks: {
+        <div style={{ height: '400px' }}>
+            <Bar
+                data={chartData}
+                options={{
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Height',
+                                color: '#000', // Changed to black for better visibility
+                            },
+                            ticks: {
+                                color: '#000', // Changed to black for better visibility
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.2)', // Changed to black for better visibility
+                            },
+                        },
+                        y: {
                             beginAtZero: true,
-                            precision: 0, // Ensures integer values are displayed
+                            title: {
+                                display: true,
+                                text: 'Number of Vehicles',
+                                color: '#000', // Changed to black for better visibility
+                            },
+                            ticks: {
+                                precision: 0, // Ensures integer values are displayed
+                                color: '#000', // Changed to black for better visibility
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.2)', // Changed to black for better visibility
+                            },
                         },
                     },
-                },
-            }}
-        />
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#000', // Changed to black for better visibility
+                            },
+                        },
+                    },
+                    responsive: true,
+                    maintainAspectRatio: false,
+                }}
+            />
+        </div>
     );
 };
 

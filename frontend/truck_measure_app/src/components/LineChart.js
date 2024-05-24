@@ -13,28 +13,41 @@ const LineChart = () => {
                 const response = await axios.get(`${BASE_URL}/api/v1/vehicle-details`);
                 const data = response.data;
 
+                const baseDate = new Date('2024-01-01');
                 const groupedData = data.reduce((acc, detail) => {
                     const date = new Date(detail.created_at);
+                    if (date < baseDate) return acc;
                     const month = date.toLocaleString('default', { month: 'short', year: 'numeric' });
 
                     if (!acc[month]) {
-                        acc[month] = 0;
+                        acc[month] = { count: 0, cumulative: 0 };
                     }
-                    acc[month] += 1;
+                    acc[month].count += 1;
                     return acc;
                 }, {});
 
-                const labels = Object.keys(groupedData).sort((a, b) => new Date(a) - new Date(b));
-                const values = labels.map(label => groupedData[label]);
+                let cumulativeCount = 0;
+                const labels = [baseDate.toLocaleString('default', { month: 'short', year: 'numeric' }), ...Object.keys(groupedData).sort((a, b) => new Date(a) - new Date(b))];
+                const counts = [0, ...labels.slice(1).map(label => groupedData[label].count)];
+                const cumulativeCounts = [0, ...labels.slice(1).map(label => {
+                    cumulativeCount += groupedData[label].count;
+                    return cumulativeCount;
+                })];
 
                 setChartData({
                     labels,
                     datasets: [
                         {
-                            label: 'Number of Trucks',
-                            data: values,
+                            label: 'Number of Trucks Added',
+                            data: counts,
                             borderColor: 'rgba(75,192,192,1)',
                             backgroundColor: 'rgba(75,192,192,0.2)',
+                        },
+                        {
+                            label: 'Cumulative Number of Trucks',
+                            data: cumulativeCounts,
+                            borderColor: 'rgba(153,102,255,1)',
+                            backgroundColor: 'rgba(153,102,255,0.2)',
                         },
                     ],
                 });
@@ -51,58 +64,60 @@ const LineChart = () => {
     }
 
     return (
-        <Line
-            data={chartData}
-            options={{
-                scales: {
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Date (Month-Year)',
-                            color: '#fff',
+        <div style={{ height: '400px' }}>
+            <Line
+                data={chartData}
+                options={{
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Date (Month-Year)',
+                                color: '#000', // Changed to black for better visibility
+                            },
+                            ticks: {
+                                color: '#000', // Changed to black for better visibility
+                                autoSkip: false,
+                                maxRotation: 45,
+                                minRotation: 45,
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.2)', // Changed to black for better visibility
+                            },
                         },
-                        ticks: {
-                            color: '#fff',
-                            autoSkip: false, // Ensure all labels are shown
-                            maxRotation: 45, // Rotate labels if needed
-                            minRotation: 45,
-                        },
-                        grid: {
-                            color: 'rgba(255, 255, 255, 0.2)',
-                        },
-                    },
-                    y: {
-                        beginAtZero: true,
-                        title: {
-                            display: true,
-                            text: 'Number of Trucks',
-                            color: '#fff',
-                        },
-                        ticks: {
-                            precision: 0, // Ensures integer values are displayed
-                            color: '#fff',
-                        },
-                        grid: {
-                            color: 'rgba(255, 255, 255, 0.2)',
-                        },
-                    },
-                },
-                plugins: {
-                    legend: {
-                        labels: {
-                            color: '#fff',
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Number of Trucks',
+                                color: '#000', // Changed to black for better visibility
+                            },
+                            ticks: {
+                                precision: 0,
+                                color: '#000', // Changed to black for better visibility
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.2)', // Changed to black for better visibility
+                            },
                         },
                     },
-                },
-                elements: {
-                    line: {
-                        tension: 0.4,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#000', // Changed to black for better visibility
+                            },
+                        },
                     },
-                },
-                responsive: true,
-                maintainAspectRatio: false,
-            }}
-        />
+                    elements: {
+                        line: {
+                            tension: 0.4,
+                        },
+                    },
+                    responsive: true,
+                    maintainAspectRatio: false,
+                }}
+            />
+        </div>
     );
 };
 
