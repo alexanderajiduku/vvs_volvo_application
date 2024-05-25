@@ -94,7 +94,7 @@ const ModelTable = () => {
                     if (column.id === 'actions') {
                       return (
                         <TableCell key={column.id} align={column.align} style={{ color: '#fff' }}>
-                          <IconButton onClick={() => handleDelete(model.id)} color="secondary">
+                          <IconButton onClick={() => handleDelete(model.id)} sx={{ color: 'red', '&:hover': { color: '#ff1744' } }}>
                             <DeleteIcon />
                           </IconButton>
                         </TableCell>

@@ -108,7 +108,7 @@ const CameraTable = () => {
                     if (column.id === 'actions') {
                       return (
                         <TableCell key={column.id} align={column.align || 'center'} sx={{ color: '#fff' }}>
-                          <IconButton onClick={() => handleDelete(camera.id)} color="secondary">
+                          <IconButton onClick={() => handleDelete(camera.id)} sx={{ color: 'red', '&:hover': { color: '#ff1744' } }}>
                             <DeleteIcon />
                           </IconButton>
                         </TableCell>
