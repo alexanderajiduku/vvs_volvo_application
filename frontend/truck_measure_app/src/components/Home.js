@@ -15,7 +15,7 @@ const Home = () => {
       <div className="container text-center">
         <h1 className="mb-4 font-weight-bold">Volvo Vision System</h1>
         {currentUser && (
-          <h2>Welcome Back, {currentUser.firstName || currentUser.username}!</h2>
+          <h2>Welcome Back {currentUser.firstName || currentUser.username}!</h2>
         )}
 
         <p>
