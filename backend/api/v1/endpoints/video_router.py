@@ -10,7 +10,6 @@ router = APIRouter()
 @router.post("/video/start-video-capture")
 async def start_video_capture(input_source: str = '0'):
     try:
-        # Assuming `detection_model`, `tracker`, `output_dir`, and `detected_frames_dir` are available
         await DetectionHandler.process_video(input_source)
         return {"message": "Video capture started successfully"}
     except Exception as e:

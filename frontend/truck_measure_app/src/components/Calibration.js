@@ -13,8 +13,6 @@ const theme = createTheme();
 const Calibration = () => {
     const handleCalibrationSuccess = () => {
         console.log('Calibration was successful');
-        // Here you can add any logic you want to execute after successful calibration
-        // For example, you might want to refresh a list of cameras, or show a success message
     };
 
     return (

@@ -14,9 +14,7 @@ const Navigation = () => {
     const theme = useTheme();
 
     const handleLogout = () => {
-        // Implement logout logic here, e.g., clear user token, update state
-        setCurrentUser(null); // Example: Update the user context to null upon logout
-        // Redirect to login page or home page as needed
+        setCurrentUser(null);
     };
 
     const loggedInNav = () => {

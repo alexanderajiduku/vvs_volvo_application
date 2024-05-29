@@ -9,14 +9,12 @@ from .preprocessing import preprocess_frame_func
 from app.shared.shared import frames_queue
 from .undistortion_class import CameraFeedUndistorter
 from vmbpy import VmbSystem, PixelFormat
-import asyncio
-import logging
 import random
 import string
 
 
 class DetectionHandler:
-    def __init__(self, model_id, db_session: Session, roi_settings, snapped_folder, confidence_threshold, capture_range, output_dir: str = 'processed_videos', detected_frames_dir: str = 'detected_frames', save_dir: str = 'snapshots'):
+    def __init__(self, model_id, db_session: Session, snapped_folder, confidence_threshold, output_dir: str = 'processed_videos', detected_frames_dir: str = 'detected_frames', save_dir: str = 'snapshots'):
         self.model = db_session.query(Model).filter(Model.id == model_id).first()
         if self.model is None:
             raise ValueError(f"Model with ID {model_id} not found in the database")
@@ -33,7 +31,7 @@ class DetectionHandler:
         self.save_dir = save_dir
         self.is_running = True
         self.undistorter = CameraFeedUndistorter()
-        self.processed_objects = {}  # Track objects and their last known positions
+        self.processed_objects = {}  
         self.line_x_position = 750  
         self.line_x_position_2 = 2200 
 

@@ -19,8 +19,8 @@ class Preprocessor:
  
     def apply_gaussian_blur(self, image):
         variance = np.var(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY))
-        kernel_size = int(min(self.blur_kernel_size[0] + variance // 50, 31))  # Max kernel size 31, adjust as needed
-        kernel_size = kernel_size + 1 if kernel_size % 2 == 0 else kernel_size  # Ensure kernel size is odd
+        kernel_size = int(min(self.blur_kernel_size[0] + variance // 50, 31))  
+        kernel_size = kernel_size + 1 if kernel_size % 2 == 0 else kernel_size  
         return cv2.GaussianBlur(image, (kernel_size, kernel_size), 0)
  
     def adjust_brightness_contrast(self, image, brightness=0, contrast=100):

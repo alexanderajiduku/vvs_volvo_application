@@ -27,11 +27,6 @@ const TruckMeasure = () => {
                 <Grid item xs={12}>
                     <MeasurementsDisplay isActive={isActive} />
                 </Grid>
-                {/* 
-                <Grid item xs={12}>
-                    <VideoStream /> 
-                </Grid>
-                 */}
             </Grid>
         </Container>
     );

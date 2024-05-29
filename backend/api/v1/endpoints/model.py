@@ -3,7 +3,6 @@ import os
 import shutil
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 from sqlalchemy.orm import Session
-from app import crud, schemas
 from app.database.database import get_db
 from app.schemas.model import Model as SchemaModel, ModelCreate, ModelResponse
 from app.crud.crud_model import CRUDModel

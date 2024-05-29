@@ -12,7 +12,7 @@ const ModelForm = () => {
   const [error, setError] = useState('');
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
-  const [alertSeverity, setAlertSeverity] = useState('error'); // Default to 'error' since we already have error handling
+  const [alertSeverity, setAlertSeverity] = useState('error');
   const fileInputRef = useRef(null);
 
   const handleNameChange = (event) => setName(event.target.value);
@@ -39,7 +39,7 @@ const ModelForm = () => {
 
   const handleCloseSnackbar = () => {
     setOpenSnackbar(false);
-    setError(''); // Reset error when Snackbar is closed
+    setError(''); 
   };
 
   const handleSubmit = async (event) => {
